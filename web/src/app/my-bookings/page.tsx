@@ -1,0 +1,93 @@
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { MainHeader } from '@/components/layout/main-header'
+import { MyBookingsView } from '@/components/booking/my-bookings-view'
+
+export default async function MyBookingsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login?next=/my-bookings')
+  }
+
+  // 1. Fetch user bookings with court, club, and matches
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select(`
+      *,
+      court:courts (
+        id,
+        name,
+        sport_type,
+        club:clubs (
+          id,
+          name,
+          address
+        )
+      ),
+      matches (*)
+    `)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  // 2. Fetch matches the user participated in
+  const { data: participations } = await supabase
+    .from('match_participants')
+    .select(`
+      id,
+      match_id,
+      user_id,
+      status,
+      message,
+      joined_at,
+      match:matches (
+        id,
+        title,
+        status,
+        sport_type,
+        cost_sharing_type,
+        cost_per_person,
+        current_players,
+        required_players,
+        booking:bookings (
+          id,
+          start_time,
+          end_time,
+          court:courts (
+            id,
+            name,
+            club:clubs (
+              id,
+              name,
+              address
+            )
+          )
+        )
+      )
+    `)
+    .eq('user_id', user.id)
+    .order('joined_at', { ascending: false })
+
+  return (
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <MainHeader />
+
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            Lịch Đặt Sân & Kèo Giao Lưu
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Theo dõi tình trạng đơn đặt sân, thông tin cọc và quản lý các kèo thể thao bạn tham gia.
+          </p>
+        </div>
+
+        <MyBookingsView
+          bookings={bookings || []}
+          participations={participations || []}
+        />
+      </main>
+    </div>
+  )
+}
