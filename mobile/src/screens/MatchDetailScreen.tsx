@@ -1,0 +1,553 @@
+import React, { useState, useEffect } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  TextInput,
+  Alert,
+} from 'react-native'
+import { colors } from '../theme/colors'
+import { supabase } from '../lib/supabase'
+import { Match } from '../types'
+import {
+  ChevronLeft,
+  Flame,
+  Calendar,
+  MapPin,
+  Users,
+  Award,
+  CircleDollarSign,
+  UserCheck,
+  Send,
+} from 'lucide-react-native'
+
+export default function MatchDetailScreen({ route, navigation }: any) {
+  const { matchId } = route.params
+  const [match, setMatch] = useState<Match | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [joinMessage, setJoinMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function loadMatchDetail() {
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select(`
+          *,
+          creator:profiles (
+            id,
+            full_name,
+            phone_number,
+            rating,
+            skill_level
+          ),
+          booking:bookings (
+            start_time,
+            end_time,
+            total_price,
+            court:courts (
+              name,
+              club:clubs (
+                name,
+                address,
+                district,
+                city
+              )
+            )
+          ),
+          participants:match_participants (
+            id,
+            user_id,
+            status,
+            message,
+            joined_at,
+            profile:profiles (
+              full_name,
+              rating,
+              skill_level
+            )
+          )
+        `)
+        .eq('id', matchId)
+        .single()
+
+      if (error) throw error
+      setMatch(data as any)
+    } catch (err: any) {
+      console.error('Lỗi tải chi tiết kèo:', err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadMatchDetail()
+  }, [matchId])
+
+  async function handleJoinMatch() {
+    setSubmitting(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        Alert.alert('Chưa đăng nhập', 'Vui lòng đăng nhập tài khoản trước khi tham gia kèo!')
+        return
+      }
+
+      const { error } = await supabase.from('match_participants').insert({
+        match_id: matchId,
+        user_id: user.id,
+        status: 'pending',
+        message: joinMessage.trim() || 'Xin chào, cho mình xin 1 slot tham gia giao lưu nhé!',
+      })
+
+      if (error) {
+        if (error.code === '23505') {
+          Alert.alert('Thông báo', 'Bạn đã gửi yêu cầu tham gia kèo này rồi!')
+        } else {
+          Alert.alert('Lỗi', error.message)
+        }
+      } else {
+        Alert.alert('Thành công 🎉', 'Yêu cầu của bạn đã được gửi tới chủ kèo. Vui lòng chờ duyệt!')
+        setJoinMessage('')
+        loadMatchDetail()
+      }
+    } catch (err: any) {
+      Alert.alert('Lỗi', err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading || !match) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    )
+  }
+
+  const court = match.booking?.court
+  const club = court?.club
+  const startTime = match.booking?.start_time ? new Date(match.booking.start_time) : null
+  const endTime = match.booking?.end_time ? new Date(match.booking.end_time) : null
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.headerBar}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <ChevronLeft size={22} color={colors.white} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          Chi Tiết Kèo Giao Lưu
+        </Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.body}>
+          {/* Badge Row */}
+          <View style={styles.badgeRow}>
+            <View style={styles.sportBadge}>
+              <Flame size={12} color={colors.accent} />
+              <Text style={styles.sportBadgeText}>{match.sport_type.toUpperCase()}</Text>
+            </View>
+            <View style={styles.skillBadge}>
+              <Award size={12} color={colors.primary} />
+              <Text style={styles.skillBadgeText}>
+                Trình độ: {match.skill_level === 'all' ? 'Tất cả' : match.skill_level}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.matchTitle}>{match.title}</Text>
+
+          {match.description && (
+            <View style={styles.descBox}>
+              <Text style={styles.descText}>{match.description}</Text>
+            </View>
+          )}
+
+          {/* Quick Info Grid */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <Calendar size={18} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.infoLabel}>Thời gian thi đấu</Text>
+                <Text style={styles.infoValue}>
+                  {startTime
+                    ? `${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')} - ${endTime?.getHours().toString().padStart(2, '0')}:${endTime?.getMinutes().toString().padStart(2, '0')} (${startTime.getDate()}/${startTime.getMonth() + 1}/${startTime.getFullYear()})`
+                    : 'Chưa cập nhật'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <MapPin size={18} color={colors.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.infoLabel}>Địa điểm sân</Text>
+                <Text style={styles.infoValue}>
+                  {court?.name} - {club?.name}
+                </Text>
+                <Text style={styles.infoSubText}>
+                  {club?.address}, {club?.district || club?.city}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <CircleDollarSign size={18} color={colors.success} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.infoLabel}>Chi phí tham gia</Text>
+                <Text style={[styles.infoValue, { color: colors.success }]}>
+                  {match.cost_sharing_type === 'host_covers' || !match.cost_per_person
+                    ? 'Chủ bao trọn sân (0 đ)'
+                    : `${Number(match.cost_per_person).toLocaleString('vi-VN')} đ / người`}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Creator Info */}
+          <Text style={styles.sectionTitle}>Chủ Kèo</Text>
+          <View style={styles.creatorCard}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>
+                {match.creator?.full_name?.charAt(0).toUpperCase() || 'U'}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.creatorName}>{match.creator?.full_name || 'Người dùng'}</Text>
+              <Text style={styles.creatorSub}>
+                ⭐ Đánh giá: {match.creator?.rating || '5.0'} • Trình độ: {match.creator?.skill_level || 'Cơ bản'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Participants List */}
+          <Text style={styles.sectionTitle}>
+            Thành Viên Đã Tham Gia ({match.participants?.length || 0})
+          </Text>
+
+          {match.participants && match.participants.length > 0 ? (
+            <View style={styles.participantsList}>
+              {match.participants.map((p) => (
+                <View key={p.id} style={styles.participantItem}>
+                  <View style={styles.pAvatar}>
+                    <Text style={styles.pAvatarText}>
+                      {p.profile?.full_name?.charAt(0).toUpperCase() || 'P'}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.pName}>{p.profile?.full_name || 'Ứng viên'}</Text>
+                    {p.message && <Text style={styles.pMsg}>"{p.message}"</Text>}
+                  </View>
+                  <View
+                    style={[
+                      styles.statusPill,
+                      p.status === 'accepted' ? styles.statusAccepted : styles.statusPending,
+                    ]}
+                  >
+                    <Text style={styles.statusPillText}>
+                      {p.status === 'accepted' ? 'Đã duyệt' : 'Chờ duyệt'}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>Chưa có người tham gia. Hãy là người đầu tiên!</Text>
+          )}
+
+          {/* Join Section */}
+          <Text style={styles.sectionTitle}>Đăng Ký Tham Gia</Text>
+          <View style={styles.joinBox}>
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Nhập lời chào hoặc giới thiệu trình độ..."
+              placeholderTextColor={colors.textMuted}
+              value={joinMessage}
+              onChangeText={setJoinMessage}
+              multiline
+            />
+
+            <TouchableOpacity
+              style={styles.submitBtn}
+              activeOpacity={0.8}
+              disabled={submitting}
+              onPress={handleJoinMatch}
+            >
+              <Send size={16} color={colors.white} />
+              <Text style={styles.submitBtnText}>
+                {submitting ? 'Đang gửi...' : 'Gửi Yêu Cầu Tham Gia'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  headerBar: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+    backgroundColor: colors.surface,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  content: {
+    flex: 1,
+  },
+  body: {
+    padding: 16,
+    gap: 14,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  sportBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.accentLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  sportBadgeText: {
+    color: colors.accent,
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  skillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  skillBadgeText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  matchTitle: {
+    fontSize: 20,
+    fontWeight: 'black',
+    color: colors.textPrimary,
+    lineHeight: 28,
+  },
+  descBox: {
+    backgroundColor: colors.surface,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  descText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  infoCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    gap: 10,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  infoLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginTop: 2,
+  },
+  infoSubText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.cardBorder,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginTop: 6,
+  },
+  creatorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    gap: 12,
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.primaryBorder,
+  },
+  avatarText: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  creatorName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  creatorSub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  participantsList: {
+    gap: 8,
+  },
+  participantItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: 10,
+    borderRadius: 12,
+    gap: 10,
+  },
+  pAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pAvatarText: {
+    color: colors.textSecondary,
+    fontWeight: 'bold',
+  },
+  pName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  pMsg: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+  statusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  statusAccepted: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  statusPending: {
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  emptyText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+  joinBox: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    gap: 10,
+    marginBottom: 40,
+  },
+  messageInput: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 12,
+    color: colors.textPrimary,
+    fontSize: 13,
+    minHeight: 60,
+    textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  submitBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.accent,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  submitBtnText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+})
+

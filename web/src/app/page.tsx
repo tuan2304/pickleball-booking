@@ -156,14 +156,6 @@ export default async function Home() {
                 Kèo Giao Lưu
               </Button>
             </Link>
-            {/* Nút Cổng Chủ Sân: chỉ hiện nếu là owner hoặc chưa đăng nhập */}
-            {(!user || isOwner) && (
-              <Link href="/owner/dashboard">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-6 border-border font-semibold text-base cursor-pointer hover:bg-muted">
-                  Cổng Chủ Sân
-                </Button>
-              </Link>
-            )}
           </div>
         </div>
       </section>

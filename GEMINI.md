@@ -18,6 +18,10 @@
 - [x] **Giai đoạn 3: Tìm kiếm & Đặt sân (Dành cho Người chơi)** (Hoàn thành)
 - [x] **Giai đoạn 4: Hệ thống Ghép kèo (Matchmaking)** (Hoàn thành)
 - [x] **Giai đoạn 5: Thanh toán PayOS Webhook & Real-time Notification** (Hoàn thành)
+- [x] **Giai đoạn 6: Seed Data Mẫu & Kiểm Thử E2E** (Hoàn thành)
+- [x] **Giai đoạn 7: Phát triển Mobile App (React Native / Expo)** (Hoàn thành)
+- [x] **Giai đoạn 8: Triển khai Production (Deploy Web)** (Hoàn thành)
+- [ ] **Giai đoạn 9: Nâng cấp Live Chat & Đánh giá/Review**
 
 ## 📝 Nhật ký hoạt động (Activity Log)
 - **2024-05-20:** Khởi tạo file `GEMINI.md` và thiết lập quy trình làm việc.
@@ -121,3 +125,36 @@
 - **Ghi chú kỹ thuật:**
     - Luồng thanh toán hoàn chỉnh: `TimeSlotPicker` → `createBooking()` → PayOS API → QR Code → Người chơi quét → PayOS gọi Webhook → `api/payos/webhook` cập nhật DB → Supabase Realtime broadcast → `NotificationBell` hiện popup + `BookingPaymentView` tự chuyển trạng thái.
     - Để kích hoạt PayOS thật: điền `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` vào `.env.local` và cấu hình Webhook URL trên dashboard PayOS: `https://yourdomain.com/api/payos/webhook`.
+- **2026-10-19:**
+    - Tinh chỉnh giao diện trang chủ [web/src/app/page.tsx](file:///D:/myproject/web/src/app/page.tsx): Loại bỏ nút "Cổng Chủ Sân" ở Hero Section đầu trang nhằm tối ưu trải nghiệm tập trung cho Người chơi khám phá sân và ghép kèo thể thao.
+    - Hoàn tất **Giai đoạn 6: Seed Data Mẫu & Kiểm Thử E2E**:
+      1. Viết script nạp dữ liệu mẫu [web/scripts/seed.mjs](file:///D:/myproject/web/scripts/seed.mjs).
+      2. Tạo thành công 3 tài khoản Auth mẫu: Chủ sân (`owner@sportarena.vn`), 2 Người chơi (`player1@sportarena.vn`, `player2@sportarena.vn`) với mật khẩu chung `123456`.
+      3. Tạo 3 Cụm sân thực tế: D-Sports Arena Thảo Điền (Pickleball & Tennis), Hangar Arena Cầu Giấy (Cầu Lông & Bóng Đá Mini), Saigon Sports Center Phú Mỹ Hưng (Pickleball & Bóng Rổ).
+      4. Tạo các Sân con, quy tắc Giờ vàng tối và cuối tuần.
+      5. Tạo đơn đặt sân và Kèo giao lưu mẫu kèm thành viên tham gia đã được duyệt.
+      6. Tạo hệ thống thông báo chuông Real-time mẫu cho cả Chủ sân và Người chơi.
+    - Hoàn tất **Giai đoạn 7: Phát triển Mobile App (React Native / Expo)**:
+      1. Khởi tạo dự án Expo SDK 58 (TypeScript) tại thư mục [mobile/](file:///D:/myproject/mobile/).
+      2. Cài đặt các thư viện lõi: `@supabase/supabase-js`, `@react-native-async-storage/async-storage`, `react-native-url-polyfill`, `@react-navigation/native`, `@react-navigation/bottom-tabs`, `@react-navigation/native-stack`, `react-native-svg`, `lucide-react-native`.
+      3. Cấu hình Supabase Client kết nối đồng bộ cơ sở dữ liệu với Web [mobile/src/lib/supabase.ts](file:///D:/myproject/mobile/src/lib/supabase.ts).
+      4. Thiết lập bảng màu giao diện thể thao hiện đại [mobile/src/theme/colors.ts](file:///D:/myproject/mobile/src/theme/colors.ts) và TypeScript types [mobile/src/types/index.ts](file:///D:/myproject/mobile/src/types/index.ts).
+      5. Xây dựng 5 màn hình Tab Bar:
+         - [mobile/src/screens/ClubsScreen.tsx](file:///D:/myproject/mobile/src/screens/ClubsScreen.tsx): Khám phá cụm sân & bộ lọc theo bộ môn (Pickleball, Cầu lông, Bóng đá...).
+         - [mobile/src/screens/MatchesScreen.tsx](file:///D:/myproject/mobile/src/screens/MatchesScreen.tsx): Danh sách kèo giao lưu đang mở tuyển người.
+         - [mobile/src/screens/MyBookingsScreen.tsx](file:///D:/myproject/mobile/src/screens/MyBookingsScreen.tsx): Quản lý lịch sân đã đặt và cọc.
+         - [mobile/src/screens/NotificationsScreen.tsx](file:///D:/myproject/mobile/src/screens/NotificationsScreen.tsx): Hệ thống thông báo chuông tức thời.
+         - [mobile/src/screens/ProfileScreen.tsx](file:///D:/myproject/mobile/src/screens/ProfileScreen.tsx): Tài khoản cá nhân kèm Quick Switcher giữa 3 tài khoản mẫu.
+      6. Xây dựng 2 màn hình Stack chi tiết: [mobile/src/screens/ClubDetailScreen.tsx](file:///D:/myproject/mobile/src/screens/ClubDetailScreen.tsx) và [mobile/src/screens/MatchDetailScreen.tsx](file:///D:/myproject/mobile/src/screens/MatchDetailScreen.tsx).
+      7. Điều hướng RootNavigator hoàn chỉnh tại [mobile/src/navigation/RootNavigator.tsx](file:///D:/myproject/mobile/src/navigation/RootNavigator.tsx) và [mobile/App.tsx](file:///D:/myproject/mobile/App.tsx).
+      8. Kiểm tra TypeScript (`npx tsc --noEmit`) thành công 100% không có bất kỳ cảnh báo lỗi nào.
+    - Hoàn tất **Giai đoạn 8: Triển khai Production (Deploy Web)**:
+      1. Tối ưu hóa cấu hình [web/next.config.ts](file:///D:/myproject/web/next.config.ts) hỗ trợ `output: 'standalone'` và cấu hình remote image patterns.
+      2. Soạn thảo file cấu hình biến môi trường mẫu [web/.env.example](file:///D:/myproject/web/.env.example).
+      3. Xây dựng [web/Dockerfile](file:///D:/myproject/web/Dockerfile) multi-stage tối ưu dung lượng cho trường hợp chạy trên VPS/Server riêng.
+      4. Soạn thảo tài liệu hướng dẫn triển khai hoàn chỉnh [DEPLOYMENT.md](file:///D:/myproject/DEPLOYMENT.md) chi tiết các bước đưa Web lên Vercel thông qua GitHub repository `tuan2304/pickleball-booking` và cấu hình Webhook PayOS.
+      5. Kiểm tra build standalone production thành công.
+    - Sẵn sàng bước sang **Giai đoạn 9: Nâng cấp Live Chat & Đánh giá/Review**.
+
+
+
