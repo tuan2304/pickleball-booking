@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { MainHeader } from '@/components/layout/main-header'
 import { TimeSlotPicker } from '@/components/booking/time-slot-picker'
+import { ClubReviewsSection } from '@/components/clubs/club-reviews-section'
+import { getClubReviews } from '@/app/actions/reviews'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { MapPin, Clock, ArrowLeft, ShieldCheck, Trophy, Sparkles } from 'lucide-react'
@@ -16,6 +18,7 @@ interface ClubDetailPageProps {
 export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
   const { id } = await params
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   // 1. Lấy thông tin cụm sân
   const { data: club } = await supabase
@@ -83,6 +86,9 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
     existingBookings = bookings || []
   }
 
+  // 4. Lấy danh sách reviews ban đầu
+  const initialReviews = await getClubReviews(id)
+
   const imageSrc =
     club.images && club.images[0]
       ? club.images[0]
@@ -92,51 +98,53 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <MainHeader />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* Back Link */}
         <div>
           <Link
             href="/clubs"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Quay lại danh sách sân
+            <ArrowLeft className="w-3.5 h-3.5" /> Quay lại danh sách cụm sân
           </Link>
         </div>
 
-        {/* Club Hero Card */}
+        {/* Club Hero Banner */}
         <div className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-sm">
           <div className="h-64 sm:h-80 w-full relative">
-            <img src={imageSrc} alt={club.name} className="w-full h-full object-cover" />
+            <img
+              src={imageSrc}
+              alt={club.name}
+              className="w-full h-full object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-
-            <div className="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-emerald-600 text-white font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Xác thực
-                  </Badge>
-                  <Badge variant="outline" className="bg-background/80 backdrop-blur-md">
-                    <Clock className="w-3 h-3 text-emerald-600 mr-1" />
-                    {club.open_time?.slice(0, 5)} - {club.close_time?.slice(0, 5)}
-                  </Badge>
-                </div>
-                <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight">
-                  {club.name}
-                </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{club.address}, {club.district}, {club.city}</span>
-                </p>
-              </div>
+            <div className="absolute top-4 left-4 flex gap-2">
+              <Badge className="bg-emerald-600/90 text-white font-semibold backdrop-blur-xs">
+                <Sparkles className="w-3 h-3 mr-1" /> Cụm Sân Hoạt Động
+              </Badge>
             </div>
           </div>
 
-          {/* Amenities & Description Bar */}
-          <div className="p-6 border-t border-border/60 bg-muted/20 flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="text-xs font-bold text-foreground">Tiện ích cơ sở</div>
-              <div className="flex flex-wrap gap-1.5">
-                {club.amenities?.map((amenity: string, idx: number) => (
+          <div className="p-6 sm:p-8 -mt-16 sm:-mt-20 relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-3">
+              <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
+                {club.name}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                  {club.address}, {club.ward ? `${club.ward}, ` : ''}{club.district}, {club.city}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-teal-600 shrink-0" />
+                  Giờ mở cửa: {club.open_time?.slice(0, 5)} - {club.close_time?.slice(0, 5)}
+                </span>
+              </div>
+
+              {/* Amenities */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {(club.amenities || ['wifi', 'parking', 'shower', 'lighting']).map((amenity: string, idx: number) => (
                   <span
                     key={idx}
                     className="px-2.5 py-1 rounded-md bg-background text-xs text-muted-foreground border border-border/70 capitalize font-medium"
@@ -171,6 +179,13 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
             clubCloseTime={club.close_time || '23:00:00'}
           />
         </div>
+
+        {/* Club Reviews & Ratings Section */}
+        <ClubReviewsSection
+          clubId={id}
+          currentUserId={user?.id || null}
+          initialReviews={initialReviews}
+        />
       </main>
     </div>
   )

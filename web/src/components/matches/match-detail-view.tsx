@@ -35,6 +35,9 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 
+import { MatchChatBox } from '@/components/matches/match-chat-box'
+import { MatchMessage } from '@/types/database'
+
 interface MatchDetailProps {
   match: {
     id: string
@@ -86,6 +89,7 @@ interface MatchDetailProps {
       skill_level: string | null
     } | null
   }>
+  initialMessages?: MatchMessage[]
   currentUserId: string | null
 }
 
@@ -104,7 +108,12 @@ const SKILL_LABELS: Record<string, { label: string; color: string }> = {
   advanced: { label: 'Bán chuyên / Giỏi', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
 }
 
-export function MatchDetailView({ match, participants, currentUserId }: MatchDetailProps) {
+export function MatchDetailView({
+  match,
+  participants,
+  initialMessages = [],
+  currentUserId,
+}: MatchDetailProps) {
   const router = useRouter()
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
   const [joinMessage, setJoinMessage] = useState('')
@@ -476,6 +485,13 @@ export function MatchDetailView({ match, participants, currentUserId }: MatchDet
               )}
             </CardContent>
           </Card>
+
+          {/* Live Chat Section */}
+          <MatchChatBox
+            matchId={match.id}
+            currentUserId={currentUserId || undefined}
+            initialMessages={initialMessages}
+          />
         </div>
 
         {/* Right Col: Cost & Action Panel */}

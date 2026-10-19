@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { MainHeader } from '@/components/layout/main-header'
 import { MatchDetailView } from '@/components/matches/match-detail-view'
+import { getMatchMessages } from '@/app/actions/chat'
 
 interface MatchDetailPageProps {
   params: Promise<{
@@ -80,6 +81,9 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
     .eq('match_id', id)
     .order('joined_at', { ascending: true })
 
+  // 3. Fetch initial messages for live chat
+  const initialMessages = await getMatchMessages(id)
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <MainHeader />
@@ -88,6 +92,7 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
         <MatchDetailView
           match={match as any}
           participants={(participants as any) || []}
+          initialMessages={initialMessages}
           currentUserId={user?.id || null}
         />
       </main>

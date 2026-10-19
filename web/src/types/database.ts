@@ -173,6 +173,51 @@ export type Database = {
           },
         ]
       }
+      club_reviews: {
+        Row: {
+          club_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_reviews_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       court_pricing_rules: {
         Row: {
           court_id: string
@@ -363,6 +408,45 @@ export type Database = {
           {
             foreignKeyName: "matches_creator_id_fkey"
             columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          match_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          match_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          match_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_messages_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_messages_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -672,4 +756,32 @@ export type MatchParticipant = Database['public']['Tables']['match_participants'
 export type Payment = Database['public']['Tables']['payments']['Row']
 export type NotificationType = 'booking' | 'payment' | 'match' | 'system'
 export type Notification = Database['public']['Tables']['notifications']['Row']
+
+export type MiniProfile = {
+  id: string
+  full_name: string
+  avatar_url: string | null
+  role: string
+}
+
+export interface MatchMessage {
+  id: string
+  match_id: string
+  user_id: string
+  content: string
+  created_at: string
+  profile?: MiniProfile
+}
+
+export interface ClubReview {
+  id: string
+  club_id: string
+  user_id: string
+  rating: number
+  comment: string | null
+  created_at: string
+  updated_at: string
+  profile?: MiniProfile
+}
+
 

@@ -21,7 +21,7 @@
 - [x] **Giai đoạn 6: Seed Data Mẫu & Kiểm Thử E2E** (Hoàn thành)
 - [x] **Giai đoạn 7: Phát triển Mobile App (React Native / Expo)** (Hoàn thành)
 - [x] **Giai đoạn 8: Triển khai Production (Deploy Web)** (Hoàn thành)
-- [ ] **Giai đoạn 9: Nâng cấp Live Chat & Đánh giá/Review**
+- [x] **Giai đoạn 9: Nâng cấp Live Chat & Đánh giá/Review** (Hoàn thành)
 
 ## 📝 Nhật ký hoạt động (Activity Log)
 - **2024-05-20:** Khởi tạo file `GEMINI.md` và thiết lập quy trình làm việc.
@@ -155,6 +155,21 @@
       4. Soạn thảo tài liệu hướng dẫn triển khai hoàn chỉnh [DEPLOYMENT.md](file:///D:/myproject/DEPLOYMENT.md) chi tiết các bước đưa Web lên Vercel thông qua GitHub repository `tuan2304/pickleball-booking` và cấu hình Webhook PayOS.
       5. Kiểm tra build standalone production thành công.
     - Sẵn sàng bước sang **Giai đoạn 9: Nâng cấp Live Chat & Đánh giá/Review**.
+- **2026-10-19 (Giai đoạn 9):**
+    - Hoàn tất xây dựng toàn bộ **Giai đoạn 9 (Live Chat & Đánh giá/Review)**:
+      1. Tạo migration SQL [supabase/migrations/20261019000000_add_chat_and_reviews.sql](file:///D:/myproject/supabase/migrations/20261019000000_add_chat_and_reviews.sql) bổ sung 2 bảng mới: `match_messages` (Live Chat theo kèo) và `club_reviews` (Đánh giá sao + nhận xét cụm sân), đầy đủ RLS và Supabase Realtime publication.
+      2. Push migration thành công lên Supabase Cloud (`hlaawnushcfuzidzwvww`).
+      3. Bổ sung TypeScript types vào [web/src/types/database.ts](file:///D:/myproject/web/src/types/database.ts): định nghĩa table `match_messages` & `club_reviews` trong `Database['public']['Tables']`, thêm `MiniProfile`, `MatchMessage`, `ClubReview` interfaces.
+      4. Xây dựng Server Actions chat [web/src/app/actions/chat.ts](file:///D:/myproject/web/src/app/actions/chat.ts): `getMatchMessages()`, `sendMatchMessage()`.
+      5. Xây dựng Server Actions review [web/src/app/actions/reviews.ts](file:///D:/myproject/web/src/app/actions/reviews.ts): `getClubReviews()`, `submitClubReview()`.
+      6. Xây dựng component Live Chat [web/src/components/matches/match-chat-box.tsx](file:///D:/myproject/web/src/components/matches/match-chat-box.tsx) với Supabase Realtime subscription, hiển thị bubble chat theo chiều trái (người khác) / phải (tôi), auto-scroll, hỗ trợ Enter để gửi.
+      7. Xây dựng component Đánh giá Sân [web/src/components/clubs/club-reviews-section.tsx](file:///D:/myproject/web/src/components/clubs/club-reviews-section.tsx) gồm Form chọn sao tương tác + nhập nhận xét + danh sách review realtime.
+      8. Tích hợp `MatchChatBox` vào trang Chi Tiết Kèo [web/src/app/matches/[id]/page.tsx](file:///D:/myproject/web/src/app/matches/[id]/page.tsx) và [web/src/components/matches/match-detail-view.tsx](file:///D:/myproject/web/src/components/matches/match-detail-view.tsx).
+      9. Tích hợp `ClubReviewsSection` vào trang Chi Tiết Cụm Sân [web/src/app/clubs/[id]/page.tsx](file:///D:/myproject/web/src/app/clubs/[id]/page.tsx).
+      10. Fix TypeScript: dùng `MiniProfile` type thay vì full `Profile` để match với Supabase partial select query.
+      11. Chạy Production Build thành công 100% với **15 route** tối ưu hóa (exit code 0).
+    - **Toàn bộ 9 Giai đoạn đã hoàn thành! 🎉🏆**
+
 
 
 
