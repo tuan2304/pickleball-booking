@@ -601,7 +601,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      next_payos_order_code: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      expire_pending_bookings: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_busy_slots: {
+        Args: { p_court_ids: string[] }
+        Returns: {
+          court_id: string
+          start_time: string
+          end_time: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

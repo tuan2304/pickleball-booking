@@ -40,8 +40,11 @@ export async function submitClubReview(
   rating: number,
   comment?: string
 ) {
-  if (rating < 1 || rating > 5) {
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
     return { error: 'Điểm đánh giá phải từ 1 đến 5 sao' }
+  }
+  if (comment && comment.trim().length > 1000) {
+    return { error: 'Nhận xét tối đa 1000 ký tự' }
   }
 
   const supabase = await createClient()
@@ -68,7 +71,11 @@ export async function submitClubReview(
 
   if (error) {
     console.error('Error submitting review:', error)
-    return { error: error.message }
+    // 42501 = bị RLS từ chối: chưa từng chơi tại cụm sân này (hoặc là chủ sân)
+    if (error.code === '42501') {
+      return { error: 'Bạn cần đặt sân và chơi tại cụm sân này trước khi đánh giá' }
+    }
+    return { error: 'Không thể gửi đánh giá' }
   }
 
   revalidatePath(`/clubs/${clubId}`)

@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createNotification } from '@/app/actions/notifications'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { notifyUser } from '@/lib/notify'
 
 export interface CreateMatchInput {
   bookingId: string
@@ -15,81 +16,94 @@ export interface CreateMatchInput {
   costPerPerson?: number
 }
 
-export async function createMatch(input: CreateMatchInput) {
+const SKILL_LEVELS = ['all', 'beginner', 'intermediate', 'advanced'] as const
+
+/** Lấy người dùng hiện tại; mọi ghi vào DB sau đó dùng admin client nên phải tự kiểm tra quyền. */
+async function requireUser() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  return { supabase, user }
+}
 
+export async function createMatch(input: CreateMatchInput) {
+  const { supabase, user } = await requireUser()
   if (!user) {
     return { error: 'Vui lòng đăng nhập để tạo bài ghép kèo' }
   }
 
-  // 1. Kiểm tra booking có tồn tại và thuộc sở hữu của user không
+  const title = input.title?.trim()
+  if (!title) return { error: 'Vui lòng nhập tên kèo' }
+
+  // 1. Booking phải tồn tại, của chính user, còn hiệu lực và chưa kết thúc
   const { data: booking, error: bookingErr } = await supabase
     .from('bookings')
-    .select('id, user_id, court_id, total_price, court:courts (sport_type)')
+    .select('id, user_id, status, end_time, total_price, court:courts (sport_type)')
     .eq('id', input.bookingId)
     .single()
 
   if (bookingErr || !booking) {
     return { error: 'Không tìm thấy thông tin đơn đặt sân tương ứng' }
   }
-
   if (booking.user_id !== user.id) {
     return { error: 'Bạn chỉ có thể tạo ghép kèo cho đơn đặt sân của chính mình' }
   }
+  if (!['pending', 'confirmed'].includes(booking.status)) {
+    return { error: 'Đơn đặt sân này không còn hiệu lực để mở kèo' }
+  }
+  if (new Date(booking.end_time).getTime() < Date.now()) {
+    return { error: 'Khung giờ này đã kết thúc, không thể mở kèo' }
+  }
 
-  // 2. Kiểm tra xem booking đã có match nào chưa
-  const { data: existingMatch } = await supabase
+  const admin = createAdminClient()
+
+  // 2. Mỗi đơn chỉ mở một kèo
+  const { data: existingMatch } = await admin
     .from('matches')
     .select('id')
     .eq('booking_id', input.bookingId)
     .maybeSingle()
-
   if (existingMatch) {
     return { error: 'Đơn đặt sân này đã được mở ghép kèo trước đó' }
   }
 
-  // 3. Tính toán chi phí mỗi người nếu là chia đều
-  let costPerPerson = input.costPerPerson ?? 0
-  if (input.costSharingType === 'split' && !input.costPerPerson) {
-    const totalP = Number(booking.total_price) || 0
-    const count = Math.max(1, input.requiredPlayers)
-    costPerPerson = Math.round(totalP / count)
-  } else if (input.costSharingType === 'host_covers') {
-    costPerPerson = 0
+  // 3. Chuẩn hóa dữ liệu và tính chi phí mỗi người
+  const requiredPlayers = Math.min(50, Math.max(2, Math.floor(input.requiredPlayers || 2)))
+  const costSharingType = input.costSharingType === 'host_covers' ? 'host_covers' : 'split'
+  const totalPrice = Number(booking.total_price) || 0
+  let costPerPerson = 0
+  if (costSharingType === 'split') {
+    const requested = Number(input.costPerPerson)
+    costPerPerson =
+      requested > 0 && requested <= totalPrice ? Math.round(requested) : Math.round(totalPrice / requiredPlayers)
   }
 
   const courtData = booking.court as unknown as { sport_type: string } | null
-  const sportType = input.sportType || courtData?.sport_type || 'football'
+  const sportType = courtData?.sport_type || input.sportType || 'football'
 
-  // 4. Tạo match record
-  const { data: match, error: matchErr } = await supabase
+  const { data: match, error: matchErr } = await admin
     .from('matches')
     .insert({
       booking_id: input.bookingId,
       creator_id: user.id,
-      title: input.title.trim(),
-      description: input.description?.trim() || null,
+      title: title.slice(0, 100),
+      description: input.description?.trim().slice(0, 500) || null,
       sport_type: sportType,
-      skill_level: input.skillLevel || 'all',
-      required_players: Math.max(1, input.requiredPlayers),
-      current_players: 1, // Chủ phòng tính là 1
-      cost_sharing_type: input.costSharingType || 'split',
+      skill_level: SKILL_LEVELS.includes(input.skillLevel as never) ? input.skillLevel! : 'all',
+      required_players: requiredPlayers,
+      current_players: 1,
+      cost_sharing_type: costSharingType,
       cost_per_person: costPerPerson,
       status: 'open',
     })
     .select('id')
     .single()
 
-  if (matchErr) {
-    return { error: matchErr.message || 'Không thể tạo kèo ghép. Vui lòng thử lại.' }
+  if (matchErr || !match) {
+    console.error('createMatch lỗi', matchErr)
+    return { error: 'Không thể tạo kèo ghép. Vui lòng thử lại.' }
   }
 
-  // 5. Cập nhật cờ is_open_match trong bookings
-  await supabase
-    .from('bookings')
-    .update({ is_open_match: true })
-    .eq('id', input.bookingId)
+  await admin.from('bookings').update({ is_open_match: true }).eq('id', input.bookingId)
 
   revalidatePath('/matches')
   revalidatePath('/my-bookings')
@@ -99,91 +113,65 @@ export async function createMatch(input: CreateMatchInput) {
 }
 
 export async function joinMatch(matchId: string, message?: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const { user } = await requireUser()
   if (!user) {
     return { error: 'Vui lòng đăng nhập để gửi yêu cầu tham gia' }
   }
 
-  // 1. Kiểm tra match
-  const { data: match, error: matchErr } = await supabase
+  const admin = createAdminClient()
+
+  const { data: match, error: matchErr } = await admin
     .from('matches')
-    .select('id, creator_id, title, status, current_players, required_players')
+    .select('id, creator_id, title, status')
     .eq('id', matchId)
     .single()
 
   if (matchErr || !match) {
     return { error: 'Không tìm thấy thông tin kèo thể thao' }
   }
-
   if (match.creator_id === user.id) {
     return { error: 'Bạn là chủ tạo kèo này nên không cần gửi yêu cầu tham gia' }
   }
-
   if (match.status !== 'open') {
     return { error: 'Kèo này hiện đã đóng hoặc đã đủ người tham gia' }
   }
 
-  // 2. Kiểm tra xem đã gửi yêu cầu trước đó chưa
-  const { data: existingParticipant } = await supabase
+  const note = message?.trim().slice(0, 300) || null
+
+  const { data: existing } = await admin
     .from('match_participants')
     .select('id, status')
     .eq('match_id', matchId)
     .eq('user_id', user.id)
     .maybeSingle()
 
-  if (existingParticipant) {
-    if (existingParticipant.status === 'pending') {
+  if (existing) {
+    if (existing.status === 'pending') {
       return { error: 'Bạn đã gửi yêu cầu tham gia rồi, vui lòng chờ chủ kèo duyệt' }
     }
-    if (existingParticipant.status === 'accepted') {
+    if (existing.status === 'accepted') {
       return { error: 'Bạn đã là thành viên chính thức của kèo này' }
     }
-    if (existingParticipant.status === 'rejected') {
+    if (existing.status === 'rejected') {
       return { error: 'Yêu cầu trước đó của bạn đã bị từ chối bởi chủ kèo' }
     }
-    // Nếu status = 'left', cho phép tham gia lại bằng cách update
-    const { error: reapplyErr } = await supabase
+    // status = 'left' → cho phép xin tham gia lại
+    const { error: reapplyErr } = await admin
       .from('match_participants')
-      .update({
-        status: 'pending',
-        message: message?.trim() || null,
-        joined_at: new Date().toISOString(),
-      })
-      .eq('id', existingParticipant.id)
-
-    if (reapplyErr) return { error: reapplyErr.message }
-
-    // Gửi thông báo cho chủ kèo
-    await createNotification({
-      userId: match.creator_id,
-      title: 'Có người xin tham gia kèo! 🏓',
-      message: `Một người chơi vừa gửi lại yêu cầu tham gia kèo "${match.title}".`,
-      type: 'match',
-      link: `/matches/${matchId}`,
-    })
-
-    revalidatePath(`/matches/${matchId}`)
-    return { success: true }
+      .update({ status: 'pending', message: note, joined_at: new Date().toISOString() })
+      .eq('id', existing.id)
+    if (reapplyErr) return { error: 'Không thể gửi lại yêu cầu tham gia' }
+  } else {
+    const { error: insertErr } = await admin
+      .from('match_participants')
+      .insert({ match_id: matchId, user_id: user.id, status: 'pending', message: note })
+    if (insertErr) {
+      console.error('joinMatch lỗi', insertErr)
+      return { error: 'Không thể gửi yêu cầu tham gia' }
+    }
   }
 
-  // 3. Tạo mới participant record
-  const { error: insertErr } = await supabase
-    .from('match_participants')
-    .insert({
-      match_id: matchId,
-      user_id: user.id,
-      status: 'pending',
-      message: message?.trim() || null,
-    })
-
-  if (insertErr) {
-    return { error: insertErr.message || 'Không thể gửi yêu cầu tham gia' }
-  }
-
-  // Gửi thông báo cho chủ kèo
-  await createNotification({
+  await notifyUser({
     userId: match.creator_id,
     title: 'Có người xin tham gia kèo! 🏓',
     message: `Một người chơi vừa gửi yêu cầu tham gia kèo "${match.title}". Bấm để xem và duyệt thành viên.`,
@@ -195,34 +183,20 @@ export async function joinMatch(matchId: string, message?: string) {
   return { success: true }
 }
 
-export async function respondParticipant(
-  participantId: string,
-  newStatus: 'accepted' | 'rejected'
-) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+export async function respondParticipant(participantId: string, newStatus: 'accepted' | 'rejected') {
+  const { user } = await requireUser()
   if (!user) {
     return { error: 'Vui lòng đăng nhập' }
   }
+  if (newStatus !== 'accepted' && newStatus !== 'rejected') {
+    return { error: 'Trạng thái không hợp lệ' }
+  }
 
-  // 1. Kiểm tra quyền chủ kèo
-  const { data: participant, error: pErr } = await supabase
+  const admin = createAdminClient()
+
+  const { data: participant, error: pErr } = await admin
     .from('match_participants')
-    .select(`
-      id,
-      status,
-      match_id,
-      user_id,
-      match:matches (
-        id,
-        title,
-        creator_id,
-        status,
-        current_players,
-        required_players
-      )
-    `)
+    .select('id, status, user_id, match:matches ( id, title, creator_id, status )')
     .eq('id', participantId)
     .single()
 
@@ -235,104 +209,79 @@ export async function respondParticipant(
     title: string
     creator_id: string
     status: string
-    current_players: number
-    required_players: number
   } | null
 
   if (!match || match.creator_id !== user.id) {
     return { error: 'Chỉ chủ phòng mới có quyền duyệt thành viên' }
   }
+  if (participant.status !== 'pending') {
+    return { error: 'Yêu cầu này đã được xử lý trước đó' }
+  }
+  if (newStatus === 'accepted' && !['open', 'full'].includes(match.status)) {
+    return { error: 'Kèo này đã đóng, không thể duyệt thêm thành viên' }
+  }
 
-  // 2. Cập nhật trạng thái người tham gia
-  const { error: updateErr } = await supabase
+  // current_players và status của kèo do trigger trong database tự cập nhật; trigger cũng chặn duyệt quá số người
+  const { error: updateErr } = await admin
     .from('match_participants')
     .update({ status: newStatus })
     .eq('id', participantId)
+    .eq('status', 'pending')
 
   if (updateErr) {
-    return { error: updateErr.message }
+    if (updateErr.message.includes('MATCH_FULL')) {
+      return { error: 'Kèo đã đủ người, không thể duyệt thêm' }
+    }
+    if (updateErr.message.includes('MATCH_CLOSED')) {
+      return { error: 'Kèo này đã đóng, không thể duyệt thêm thành viên' }
+    }
+    console.error('respondParticipant lỗi', updateErr)
+    return { error: 'Không thể cập nhật yêu cầu' }
   }
 
-  // 3. Nếu duyệt 'accepted', cập nhật số lượng current_players trong match
-  if (newStatus === 'accepted' && participant.status !== 'accepted') {
-    const nextCurrent = match.current_players + 1
-    const isFull = nextCurrent >= match.required_players
-
-    await supabase
-      .from('matches')
-      .update({
-        current_players: nextCurrent,
-        status: isFull ? 'full' : 'open',
-      })
-      .eq('id', match.id)
-  }
-
-  // 4. Gửi thông báo cho Ứng viên
   const isAccepted = newStatus === 'accepted'
-  if (participant.user_id) {
-    await createNotification({
-      userId: participant.user_id,
-      title: isAccepted ? 'Yêu cầu tham gia đã được duyệt! 🎉' : 'Yêu cầu tham gia bị từ chối',
-      message: isAccepted
-        ? `Chủ kèo đã duyệt bạn vào kèo "${match.title || 'giao lưu'}". Hãy chuẩn bị đồ và ra sân đúng giờ nhé!`
-        : `Rất tiếc, yêu cầu tham gia kèo "${match.title || 'giao lưu'}" của bạn đã bị từ chối bởi chủ kèo.`,
-      type: 'match',
-      link: `/matches/${match.id}`,
-    })
-  }
+  await notifyUser({
+    userId: participant.user_id,
+    title: isAccepted ? 'Yêu cầu tham gia đã được duyệt! 🎉' : 'Yêu cầu tham gia bị từ chối',
+    message: isAccepted
+      ? `Chủ kèo đã duyệt bạn vào kèo "${match.title || 'giao lưu'}". Hãy chuẩn bị đồ và ra sân đúng giờ nhé!`
+      : `Rất tiếc, yêu cầu tham gia kèo "${match.title || 'giao lưu'}" của bạn đã bị từ chối bởi chủ kèo.`,
+    type: 'match',
+    link: `/matches/${match.id}`,
+  })
 
   revalidatePath(`/matches/${match.id}`)
   return { success: true }
 }
 
 export async function leaveMatch(matchId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const { user } = await requireUser()
   if (!user) {
     return { error: 'Vui lòng đăng nhập' }
   }
 
-  const { data: participant } = await supabase
+  const admin = createAdminClient()
+
+  const { data: participant } = await admin
     .from('match_participants')
     .select('id, status')
     .eq('match_id', matchId)
     .eq('user_id', user.id)
     .maybeSingle()
 
-  if (!participant) {
+  if (!participant || !['pending', 'accepted'].includes(participant.status)) {
     return { error: 'Bạn chưa tham gia kèo này' }
   }
 
-  const wasAccepted = participant.status === 'accepted'
-
-  const { error: updateErr } = await supabase
+  // Trigger tự trừ current_players và mở lại kèo nếu đang "đủ người"
+  const { error: updateErr } = await admin
     .from('match_participants')
     .update({ status: 'left' })
     .eq('id', participant.id)
 
   if (updateErr) {
-    return { error: updateErr.message }
-  }
-
-  // Nếu người rời đã từng được duyệt, giảm current_players và mở lại nếu đang full
-  if (wasAccepted) {
-    const { data: match } = await supabase
-      .from('matches')
-      .select('current_players, required_players')
-      .eq('id', matchId)
-      .single()
-
-    if (match) {
-      const nextCurrent = Math.max(1, match.current_players - 1)
-      await supabase
-        .from('matches')
-        .update({
-          current_players: nextCurrent,
-          status: 'open',
-        })
-        .eq('id', matchId)
-    }
+    console.error('leaveMatch lỗi', updateErr)
+    return { error: 'Không thể rời kèo' }
   }
 
   revalidatePath(`/matches/${matchId}`)
@@ -340,16 +289,16 @@ export async function leaveMatch(matchId: string) {
 }
 
 export async function cancelMatch(matchId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const { user } = await requireUser()
   if (!user) {
     return { error: 'Vui lòng đăng nhập' }
   }
 
-  const { data: match } = await supabase
+  const admin = createAdminClient()
+
+  const { data: match } = await admin
     .from('matches')
-    .select('id, creator_id, booking_id')
+    .select('id, creator_id, booking_id, title')
     .eq('id', matchId)
     .single()
 
@@ -357,15 +306,27 @@ export async function cancelMatch(matchId: string) {
     return { error: 'Chỉ chủ phòng mới có thể hủy kèo này' }
   }
 
-  await supabase
-    .from('matches')
-    .update({ status: 'cancelled' })
-    .eq('id', matchId)
+  await admin.from('matches').update({ status: 'cancelled' }).eq('id', matchId)
+  await admin.from('bookings').update({ is_open_match: false }).eq('id', match.booking_id)
 
-  await supabase
-    .from('bookings')
-    .update({ is_open_match: false })
-    .eq('id', match.booking_id)
+  // Báo cho các thành viên đã được duyệt
+  const { data: members } = await admin
+    .from('match_participants')
+    .select('user_id')
+    .eq('match_id', matchId)
+    .eq('status', 'accepted')
+
+  await Promise.all(
+    (members ?? []).map((m) =>
+      notifyUser({
+        userId: m.user_id,
+        title: 'Kèo đã bị hủy',
+        message: `Chủ kèo đã hủy kèo "${match.title}".`,
+        type: 'match',
+        link: `/matches/${matchId}`,
+      })
+    )
+  )
 
   revalidatePath('/matches')
   revalidatePath('/my-bookings')

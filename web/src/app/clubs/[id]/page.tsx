@@ -77,13 +77,17 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
   }> = []
 
   if (courtIds.length > 0) {
-    const { data: bookings } = await supabase
-      .from('bookings')
-      .select('id, court_id, start_time, end_time, status')
-      .in('court_id', courtIds)
-      .in('status', ['pending', 'confirmed'])
+    // RPC công khai chỉ trả khung giờ bận (không lộ người đặt). Trước đây RLS khiến người chơi
+    // chỉ thấy đơn của chính mình nên lưới giờ hiển thị sai.
+    const { data: busy } = await supabase.rpc('get_busy_slots', { p_court_ids: courtIds })
 
-    existingBookings = bookings || []
+    existingBookings = (busy || []).map((b, i) => ({
+      id: `${b.court_id}-${i}`,
+      court_id: b.court_id,
+      start_time: b.start_time,
+      end_time: b.end_time,
+      status: b.status,
+    }))
   }
 
   // 4. Lấy danh sách reviews ban đầu

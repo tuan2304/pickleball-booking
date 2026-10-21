@@ -36,6 +36,9 @@ export async function sendMatchMessage(matchId: string, content: string) {
   if (!content || !content.trim()) {
     return { error: 'Nội dung tin nhắn không được để trống' }
   }
+  if (content.trim().length > 1000) {
+    return { error: 'Tin nhắn tối đa 1000 ký tự' }
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -68,7 +71,11 @@ export async function sendMatchMessage(matchId: string, content: string) {
 
   if (error) {
     console.error('Error sending message:', error)
-    return { error: error.message }
+    // 42501 = bị RLS từ chối: không phải chủ kèo / thành viên đã duyệt
+    if (error.code === '42501') {
+      return { error: 'Chỉ chủ kèo và thành viên đã được duyệt mới nhắn tin được' }
+    }
+    return { error: 'Không thể gửi tin nhắn' }
   }
 
   return { success: true, message: data }

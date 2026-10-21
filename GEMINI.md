@@ -22,6 +22,7 @@
 - [x] **Giai đoạn 7: Phát triển Mobile App (React Native / Expo)** (Hoàn thành)
 - [x] **Giai đoạn 8: Triển khai Production (Deploy Web)** (Hoàn thành)
 - [x] **Giai đoạn 9: Nâng cấp Live Chat & Đánh giá/Review** (Hoàn thành)
+- [x] **Giai đoạn 10: Hardening - Bảo mật RLS, thanh toán PayOS thật, hết hạn giữ chỗ** (Code hoàn thành, chờ `supabase db push` + deploy)
 
 ## 📝 Nhật ký hoạt động (Activity Log)
 - **2024-05-20:** Khởi tạo file `GEMINI.md` và thiết lập quy trình làm việc.
@@ -173,3 +174,16 @@
 
 
 
+- **2026-10-21 (Rà soát & nâng cấp giao diện):**
+    - Rà soát toàn bộ dự án, ghi kết quả vào [IMPROVEMENTS.md](IMPROVEMENTS.md): phát hiện các lỗ hổng bảo mật/thanh toán (P0), lỗi nghiệp vụ (P1) và danh sách việc nên làm tiếp (P2/P3). **Đề xuất Giai đoạn 10: Hardening (RLS, webhook, pg_cron, múi giờ) trước khi chạy thật.**
+    - Viết tài liệu luồng hoạt động có sơ đồ Mermaid: [FLOW.md](FLOW.md).
+    - Nâng cấp giao diện: sửa lỗi font không áp dụng (`--font-sans` tự tham chiếu chính nó), đổi sang **Be Vietnam Pro** (thân bài, có subset tiếng Việt) + **Barlow Condensed** (tiêu đề); màu `--primary` chuyển sang emerald; thêm hệ animation (fade-up, float, shimmer, card-lift, btn-shine, scroll-reveal, page transition, skeleton loading) có hỗ trợ `prefers-reduced-motion`; làm lại hero + thêm mục 'Bốn bước' ở trang chủ.
+    - Build production thành công (15 route).
+- **2026-10-21 (Giai đoạn 10 - Hardening):**
+    - Migration [20261021000000_phase10_hardening.sql](supabase/migrations/20261021000000_phase10_hardening.sql): thu hồi quyền ghi trực tiếp vào `bookings/payments/matches/notifications`, cấp quyền UPDATE theo cột cho `profiles`; `handle_new_user` không nhận role admin; trigger tự đếm người trong kèo + chặn quá số người; `expire_pending_bookings()` + `pg_cron`; sequence `payos_order_code_seq`; RPC `get_busy_slots`; RLS chat (chỉ thành viên) và review (chỉ người đã chơi). Đã kiểm thử trên Postgres 16 (Docker) với 30+ ca tấn công/hợp lệ, tất cả đạt.
+    - Viết lại [web/src/lib/payos.ts](web/src/lib/payos.ts) theo `@payos/node` v2 (code cũ theo v1 nên chưa từng gọi PayOS thật). Production không còn QR giả. Thêm `lib/payments.ts` (`settlePayment` idempotent), `lib/notify.ts`, `lib/supabase/admin.ts`, `lib/datetime.ts`, `lib/pricing.ts`.
+    - Webhook chỉ nhận payload có chữ ký; `createBooking` tính giá theo giờ VN, kiểm tra giờ mở cửa, giới hạn 3 đơn chờ cọc, rollback khi lỗi; `matches.ts`, `updateBookingStatus` ghi qua admin client sau khi tự kiểm tra quyền; gỡ `createNotification` và `confirmBookingDeposit` khỏi Server Actions (đang là endpoint công khai).
+    - UI thanh toán: dùng thông tin tài khoản từ PayOS, nút giả lập chỉ ở dev, đếm ngược theo giờ server, polling dự phòng. Chat chỉ hiện cho thành viên.
+    - Mobile: khóa Supabase sang `EXPO_PUBLIC_*`, nút đổi tài khoản mẫu chỉ ở `__DEV__`.
+    - Dọn dẹp: `middleware.ts` -> `proxy.ts`, gỡ `socket.io`, sửa `.gitignore`.
+    - **Việc còn lại của bạn:** chạy `supabase db push`, bật `pg_cron`, điền khóa PayOS + đăng ký Webhook URL, xóa/đổi mật khẩu tài khoản seed trên DB production. Chi tiết trong [DEPLOYMENT.md](DEPLOYMENT.md) và [IMPROVEMENTS.md](IMPROVEMENTS.md).

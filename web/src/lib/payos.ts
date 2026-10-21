@@ -1,19 +1,17 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const PayOSClass = require('@payos/node')
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PayOSInstance = any
+import { PayOS } from '@payos/node'
 
 const clientId = process.env.PAYOS_CLIENT_ID || ''
 const apiKey = process.env.PAYOS_API_KEY || ''
 const checksumKey = process.env.PAYOS_CHECKSUM_KEY || ''
 
-let payosInstance: PayOSInstance | null = null
+const isProduction = process.env.NODE_ENV === 'production'
 
+let payosInstance: PayOS | null = null
 if (clientId && apiKey && checksumKey) {
   try {
-    payosInstance = new PayOSClass(clientId, apiKey, checksumKey)
+    payosInstance = new PayOS({ clientId, apiKey, checksumKey })
   } catch (err) {
-    console.error('Error initializing PayOS client:', err)
+    console.error('Không khởi tạo được PayOS client:', err)
   }
 }
 
@@ -21,70 +19,141 @@ export function isPayOSConfigured(): boolean {
   return payosInstance !== null
 }
 
+/**
+ * Chế độ giả lập (nút "xác nhận ngay", QR mẫu) chỉ tồn tại khi KHÔNG phải production
+ * và chưa cấu hình khóa PayOS. Ở production luôn là false.
+ */
+export function isPaymentSimulationEnabled(): boolean {
+  return !isProduction && !isPayOSConfigured()
+}
+
+export class PaymentGatewayError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options)
+    this.name = 'PaymentGatewayError'
+  }
+}
+
 export interface CreatePaymentLinkParams {
   orderCode: number
   amount: number
+  /** Nội dung chuyển khoản, PayOS giới hạn 25 ký tự, nên dùng ASCII */
   description: string
   returnUrl: string
   cancelUrl: string
-  buyerName?: string
-  buyerPhone?: string
+  /** Thời điểm link hết hạn (giây Unix) */
+  expiredAt?: number
 }
 
-export async function createPaymentLink(params: CreatePaymentLinkParams) {
+export interface PaymentLinkResult {
+  orderCode: number
+  amount: number
+  description: string
+  checkoutUrl: string
+  /** URL ảnh VietQR để hiển thị trong thẻ <img> */
+  qrImageUrl: string
+  bin: string
+  accountNumber: string
+  accountName: string
+  paymentLinkId: string | null
+  simulated: boolean
+}
+
+function buildVietQrImageUrl(p: {
+  bin: string
+  accountNumber: string
+  accountName: string
+  amount: number
+  description: string
+}) {
+  const qs = new URLSearchParams({
+    amount: String(p.amount),
+    addInfo: p.description,
+    accountName: p.accountName,
+  })
+  return `https://img.vietqr.io/image/${p.bin}-${p.accountNumber}-compact2.png?${qs.toString()}`
+}
+
+export async function createPaymentLink(params: CreatePaymentLinkParams): Promise<PaymentLinkResult> {
+  const description = params.description.slice(0, 25)
+
   if (payosInstance) {
     try {
-      const response = await payosInstance.createPaymentLink({
+      const res = await payosInstance.paymentRequests.create({
         orderCode: params.orderCode,
         amount: params.amount,
-        description: params.description.slice(0, 25), // PayOS giới hạn 25 ký tự mô tả
+        description,
         returnUrl: params.returnUrl,
         cancelUrl: params.cancelUrl,
-        buyerName: params.buyerName,
-        buyerPhone: params.buyerPhone,
+        expiredAt: params.expiredAt,
       })
       return {
-        orderCode: response.orderCode,
-        amount: response.amount,
-        description: response.description,
-        checkoutUrl: response.checkoutUrl,
-        qrCode: response.qrCode,
-        accountNumber: response.accountNumber,
-        accountName: response.accountName,
-        bin: response.bin,
+        orderCode: res.orderCode,
+        amount: res.amount,
+        description: res.description,
+        checkoutUrl: res.checkoutUrl,
+        // res.qrCode là chuỗi VietQR, không phải URL ảnh → dựng ảnh từ thông tin tài khoản
+        qrImageUrl: buildVietQrImageUrl({
+          bin: res.bin,
+          accountNumber: res.accountNumber,
+          accountName: res.accountName,
+          amount: res.amount,
+          description: res.description,
+        }),
+        bin: res.bin,
+        accountNumber: res.accountNumber,
+        accountName: res.accountName,
+        paymentLinkId: res.paymentLinkId ?? null,
+        simulated: false,
       }
-    } catch (err: any) {
-      console.warn('PayOS API call failed, falling back to VietQR standard format:', err?.message || err)
+    } catch (err) {
+      console.error('Gọi PayOS tạo link thanh toán thất bại:', err)
+      // Ở production tuyệt đối không dựng QR dự phòng: khách có thể chuyển tiền vào tài khoản không phải của hệ thống
+      if (isProduction) {
+        throw new PaymentGatewayError('Cổng thanh toán đang gặp sự cố, vui lòng thử lại sau ít phút.', { cause: err })
+      }
     }
+  } else if (isProduction) {
+    throw new PaymentGatewayError('Hệ thống thanh toán chưa được cấu hình.')
   }
 
-  // Chế độ mô phỏng / VietQR fallback
-  const sanitizedDesc = params.description.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 25)
+  // ---- Chỉ chạy khi phát triển (dev) ----
+  const mock = { bin: '970422', accountNumber: '0000000000', accountName: 'SPORTARENA DEV' }
   return {
     orderCode: params.orderCode,
     amount: params.amount,
-    description: sanitizedDesc,
+    description,
     checkoutUrl: `${params.returnUrl}?simulated=true`,
-    accountNumber: '0388888888',
-    accountName: 'SPORTARENA VIETNAM',
-    bin: '970422', // MBBank
-    qrCode: `https://api.vietqr.io/image/970422-0388888888-q8eU1K9.jpg?accountName=SPORTARENA&amount=${params.amount}&addInfo=${encodeURIComponent(sanitizedDesc)}`,
+    qrImageUrl: buildVietQrImageUrl({ ...mock, amount: params.amount, description }),
+    ...mock,
+    paymentLinkId: null,
+    simulated: true,
   }
 }
 
-export function verifyPaymentWebhookData(webhookBody: any) {
-  if (payosInstance) {
-    try {
-      return payosInstance.verifyPaymentWebhookData(webhookBody)
-    } catch (err: any) {
-      console.warn('PayOS webhook signature verification failed, checking simulation payload:', err?.message)
+export interface VerifiedWebhook {
+  orderCode: number
+  amount: number
+  reference: string
+  success: boolean
+}
+
+/** Xác thực chữ ký webhook. Trả về null nếu sai chữ ký hoặc chưa cấu hình PayOS. */
+export async function verifyPaymentWebhook(body: unknown): Promise<VerifiedWebhook | null> {
+  if (!payosInstance) return null
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await payosInstance.webhooks.verify(body as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const webhook = body as any
+    return {
+      orderCode: Number(data.orderCode),
+      amount: Number(data.amount),
+      reference: String(data.reference ?? ''),
+      success: webhook?.success === true && String(data.code ?? webhook?.code) === '00',
     }
+  } catch (err) {
+    console.warn('Chữ ký webhook PayOS không hợp lệ:', err instanceof Error ? err.message : err)
+    return null
   }
-
-  // Kiểm tra nếu là payload mô phỏng test từ hệ thống
-  if (webhookBody && webhookBody.data && webhookBody.data.orderCode) {
-    return webhookBody.data
-  }
-
-  return null
 }

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
@@ -70,7 +71,7 @@ export default async function ClubsPage({ searchParams }: ClubsPageProps) {
               <Sparkles className="w-3.5 h-3.5" />
               Đặt sân trực tiếp & Khóa sân tức thì
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-foreground animate-fade-up">
               Khám Phá Sân Thể Thao
             </h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-xl">
@@ -103,7 +104,7 @@ export default async function ClubsPage({ searchParams }: ClubsPageProps) {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredClubs.map((club) => {
+              {filteredClubs.map((club, cardIndex) => {
                 const courts = club.courts || []
                 const activeCourts = courts.filter((c: { is_active: boolean }) => c.is_active)
                 const sports = Array.from(new Set(courts.map((c: { sport_type: string }) => c.sport_type)))
@@ -118,7 +119,8 @@ export default async function ClubsPage({ searchParams }: ClubsPageProps) {
                 return (
                   <Card
                     key={club.id}
-                    className="border-border shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-all overflow-hidden flex flex-col justify-between group"
+                    className="card-lift animate-fade-up stagger border-border shadow-sm hover:border-emerald-500/40 overflow-hidden flex flex-col justify-between group"
+                    style={{ '--i': cardIndex } as CSSProperties}
                   >
                     <div>
                       {/* Image Preview */}
@@ -126,7 +128,7 @@ export default async function ClubsPage({ searchParams }: ClubsPageProps) {
                         <img
                           src={imageSrc}
                           alt={club.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                         />
                         <div className="absolute top-3 right-3">
                           <Badge className="bg-background/90 text-foreground backdrop-blur-md border border-border/60 text-xs font-semibold shadow-xs">

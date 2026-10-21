@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MatchMessage } from '@/types/database'
-import { sendMatchMessage } from '@/app/actions/chat'
+import { sendMatchMessage, getMatchMessages } from '@/app/actions/chat'
 import { Button } from '@/components/ui/button'
 import { MessageSquare, Send, User } from 'lucide-react'
 
@@ -30,6 +30,13 @@ export function MatchChatBox({
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Vừa được duyệt vào kèo thì tải lại lịch sử tin nhắn (trước đó chưa có quyền đọc)
+  useEffect(() => {
+    getMatchMessages(matchId).then((data) => {
+      if (data.length > 0) setMessages(data)
+    })
+  }, [matchId])
 
   // Lắng nghe Realtime tin nhắn mới
   useEffect(() => {

@@ -487,11 +487,22 @@ export function MatchDetailView({
           </Card>
 
           {/* Live Chat Section */}
-          <MatchChatBox
-            matchId={match.id}
-            currentUserId={currentUserId || undefined}
-            initialMessages={initialMessages}
-          />
+          {isHost || userParticipant?.status === 'accepted' ? (
+            <MatchChatBox
+              matchId={match.id}
+              currentUserId={currentUserId || undefined}
+              initialMessages={initialMessages}
+            />
+          ) : (
+            <Card className="border-dashed border-border shadow-sm">
+              <CardContent className="p-8 text-center space-y-2">
+                <div className="text-sm font-bold text-foreground">Phòng chat dành cho thành viên</div>
+                <p className="text-xs text-muted-foreground">
+                  Hãy gửi yêu cầu tham gia. Khi chủ kèo duyệt, bạn sẽ vào được phòng chat của kèo này.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Right Col: Cost & Action Panel */}

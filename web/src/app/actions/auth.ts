@@ -54,7 +54,8 @@ export async function register(formData: FormData): Promise<AuthResult> {
   const password = formData.get('password') as string
   const fullName = formData.get('fullName') as string
   const phoneNumber = formData.get('phoneNumber') as string
-  const role = (formData.get('role') as UserRole) || 'player'
+  // Chỉ cho đăng ký player/owner, tuyệt đối không nhận 'admin' từ form
+  const role: UserRole = formData.get('role') === 'owner' ? 'owner' : 'player'
 
   if (!email || !password || !fullName) {
     return { error: 'Vui lòng điền các thông tin bắt buộc (họ tên, email, mật khẩu)' }

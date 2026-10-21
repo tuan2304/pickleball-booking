@@ -10,6 +10,18 @@ Tài liệu hướng dẫn triển khai nền tảng **SportArena Web** lên mô
 Dự án hiện đã được liên kết với GitHub Repository:  
 👉 **`https://github.com/tuan2304/pickleball-booking.git`**
 
+### Bước 0: Áp migration Giai đoạn 10 (BẮT BUỘC, làm TRƯỚC khi deploy code mới)
+Migration [20261021000000_phase10_hardening.sql](supabase/migrations/20261021000000_phase10_hardening.sql) khóa quyền ghi trực tiếp vào `bookings`, `payments`, `matches`... Code cũ sẽ lỗi nếu chạy với DB đã khóa, nên hãy áp migration rồi deploy code mới ngay sau đó.
+
+```bash
+supabase db push
+```
+Sau đó vào **Supabase Dashboard → Database → Extensions** và bật **`pg_cron`** (nếu migration chưa tự bật được). Kiểm tra bằng:
+```sql
+select jobname, schedule from cron.job;  -- phải thấy 'expire-pending-bookings' chạy mỗi phút
+```
+> Nếu chưa bật `pg_cron`, hệ thống vẫn tự dọn đơn quá hạn mỗi khi có người đặt sân, nhưng nên bật để sân được nhả đúng hạn.
+
 ### Bước 1: Đẩy phiên bản code mới nhất lên GitHub
 Chạy các lệnh sau trong terminal tại thư mục gốc `d:\myproject`:
 ```bash
@@ -34,8 +46,8 @@ Sao chép các biến sau từ file `.env.local` vào mục **Environment Variab
 | :--- | :--- | :--- |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://hlaawnushcfuzidzwvww.supabase.co` | Kết nối Supabase Cloud |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *(Key anon trong .env.local)* | Xác thực phía Client |
-| `SUPABASE_SERVICE_ROLE_KEY` | *(Key service_role trong .env.local)* | Quyền Admin thao tác Webhook |
-| `PAYOS_CLIENT_ID` | *(Client ID từ payos.vn)* | Cổng VietQR PayOS |
+| `SUPABASE_SERVICE_ROLE_KEY` | *(Key service_role trong .env.local)* | **Bắt buộc.** Server ghi đơn đặt, thanh toán, thông báo (không bao giờ đưa vào mobile/client) |
+| `PAYOS_CLIENT_ID` | *(Client ID từ payos.vn)* | **Bắt buộc ở production.** Thiếu 3 khóa PayOS thì không thể đặt sân (không còn QR dự phòng) |
 | `PAYOS_API_KEY` | *(API Key từ payos.vn)* | Cổng VietQR PayOS |
 | `PAYOS_CHECKSUM_KEY` | *(Checksum Key từ payos.vn)* | Xác thực chữ ký số Webhook |
 | `NEXT_PUBLIC_APP_URL` | `https://tên-dự-án.vercel.app` | Domain chính thức của bạn |
@@ -82,7 +94,9 @@ docker run -d \
 ---
 
 ## 🔒 Kiểm tra & Bảo mật sau khi Triển khai:
-1. **Kiểm tra đăng nhập:** Thử đăng nhập bằng tài khoản `owner@sportarena.vn` (mật khẩu `123456`) để vào Dashboard Chủ sân.
-2. **Kiểm tra Real-time:** Mở 2 tab trình duyệt ẩn danh: Tab 1 mở màn hình chi tiết kèo, Tab 2 thực hiện xin tham gia để kiểm tra danh sách tự cập nhật tức thì.
-3. **Thanh toán VietQR:** Thử đặt một khung giờ và quét mã QR giả lập để kiểm tra xác nhận cọc thành công.
-
+1. **Webhook:** gửi thử `POST /api/payos/webhook` với body `{"orderCode": 1}` → phải nhận **401** (webhook chỉ chấp nhận payload có chữ ký PayOS hợp lệ).
+2. **Thanh toán thật:** đặt một khung giờ, quét QR chuyển khoản số tiền nhỏ → trang tự chuyển "Thành công" và chủ sân nhận chuông thông báo. Trên production **không có** nút giả lập thanh toán.
+3. **Real-time:** mở 2 tab ẩn danh: tab 1 mở chi tiết kèo, tab 2 xin tham gia → danh sách tự cập nhật. Chỉ chủ kèo và thành viên đã duyệt mới thấy phòng chat.
+4. **Hết hạn giữ chỗ:** đặt sân rồi đóng tab, chờ hơn 15 phút → khung giờ tự mở lại (nhờ `pg_cron`).
+5. **Tài khoản mẫu:** các tài khoản seed (`@sportarena.vn`) chỉ dành cho môi trường dev. **Xóa hoặc đổi mật khẩu** trước khi mở cho người dùng thật, và dùng một project Supabase riêng cho production.
+6. **Mobile:** tạo `mobile/.env` từ `mobile/.env.example`. Nút "chuyển nhanh tài khoản" chỉ hiện ở bản dev (`__DEV__`).

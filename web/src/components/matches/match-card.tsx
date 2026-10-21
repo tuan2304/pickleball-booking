@@ -89,7 +89,7 @@ export function MatchCard({ match }: MatchCardProps) {
   const costNumber = Number(match.cost_per_person) || 0
 
   return (
-    <Card className="overflow-hidden border-border/80 shadow-sm hover:border-amber-500/40 hover:shadow-md transition-all group flex flex-col justify-between">
+    <Card className="card-lift animate-fade-up overflow-hidden border-border/80 shadow-sm hover:border-amber-500/40 group flex flex-col justify-between">
       <CardContent className="p-5 space-y-4 flex-1 flex flex-col justify-between">
         <div className="space-y-3">
           {/* Header Badges */}

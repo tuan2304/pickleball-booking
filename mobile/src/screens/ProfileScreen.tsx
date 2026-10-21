@@ -72,7 +72,7 @@ export default function ProfileScreen() {
       await supabase.auth.signOut()
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password: '123456',
+        password: process.env.EXPO_PUBLIC_DEV_PASSWORD ?? '',
       })
 
       if (error) {
@@ -138,7 +138,8 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* Quick Account Switcher */}
+      {/* Quick Account Switcher: chỉ có ở bản dev, bị loại khỏi bản release */}
+      {__DEV__ && (<>
       <Text style={styles.sectionTitle}>
         Chuyển Nhanh Tài Khoản Thử Nghiệm ⚡
       </Text>
@@ -185,6 +186,7 @@ export default function ProfileScreen() {
           )
         })}
       </View>
+      </>)}
 
       {/* App Info Footer */}
       <View style={styles.appInfoBox}>

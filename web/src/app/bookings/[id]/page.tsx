@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { MainHeader } from '@/components/layout/main-header'
 import { BookingPaymentView } from '@/components/booking/booking-payment-view'
+import { isPaymentSimulationEnabled } from '@/lib/payos'
 
 interface BookingPageProps {
   params: Promise<{
@@ -38,7 +39,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
     .eq('id', id)
     .single()
 
-  if (!booking) {
+  // Chỉ người đặt mới xem được trang thanh toán (chủ sân xem đơn ở /owner/schedule)
+  if (!booking || booking.user_id !== user.id) {
     notFound()
   }
 
@@ -63,6 +65,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
             expires_at: booking.expires_at,
           }}
           payment={paymentData}
+          simulationEnabled={isPaymentSimulationEnabled()}
+          serverNow={Date.now()}
           court={courtData}
           club={clubData}
         />

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { confirmBookingDeposit, cancelExpiredBooking } from '@/app/actions/booking'
+import { simulateDepositPayment, cancelExpiredBooking } from '@/app/actions/booking'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -40,7 +40,17 @@ interface BookingPaymentViewProps {
     status: string
     checkout_url?: string | null
     qr_code_url?: string | null
+    metadata?: {
+      bin?: string
+      account_number?: string
+      account_name?: string
+      description?: string
+    } | null
   } | null
+  /** Chỉ true ở môi trường dev chưa cấu hình PayOS */
+  simulationEnabled?: boolean
+  /** Giờ server lúc render, để đếm ngược không phụ thuộc đồng hồ máy khách */
+  serverNow?: number
   court: {
     name: string
     sport_type: string
@@ -51,11 +61,26 @@ interface BookingPaymentViewProps {
   }
 }
 
+const BANK_NAMES: Record<string, string> = {
+  '970422': 'MB Bank',
+  '970436': 'Vietcombank',
+  '970415': 'VietinBank',
+  '970418': 'BIDV',
+  '970405': 'Agribank',
+  '970407': 'Techcombank',
+  '970423': 'TPBank',
+  '970432': 'VPBank',
+  '970416': 'ACB',
+  '970403': 'Sacombank',
+}
+
 export function BookingPaymentView({
   booking,
   payment,
   court,
   club,
+  simulationEnabled = false,
+  serverNow,
 }: BookingPaymentViewProps) {
   const router = useRouter()
   const [currentStatus, setCurrentStatus] = useState<string>(booking.status)
@@ -65,9 +90,11 @@ export function BookingPaymentView({
   // 1. Tính toán thời gian đếm ngược 15 phút
   const [timeLeft, setTimeLeft] = useState<number>(() => {
     const expireTime = new Date(booking.expires_at).getTime()
-    const now = Date.now()
+    // Dùng giờ server nếu có, tránh sai khi đồng hồ máy người dùng bị lệch
+    const now = serverNow ?? Date.now()
     return Math.max(0, Math.floor((expireTime - now) / 1000))
   })
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (currentStatus === 'confirmed' || currentStatus === 'cancelled' || timeLeft <= 0) return
@@ -76,8 +103,16 @@ export function BookingPaymentView({
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer)
-          cancelExpiredBooking(booking.id)
-          setCurrentStatus('cancelled')
+          // Server quyết định đơn có thật sự hết hạn không; kiểm tra lại trạng thái thực để
+          // không báo "hết hạn" oan nếu tiền vừa về ở giây cuối
+          cancelExpiredBooking(booking.id).then(async () => {
+            const { data } = await createClient()
+              .from('bookings')
+              .select('status')
+              .eq('id', booking.id)
+              .maybeSingle()
+            setCurrentStatus(data?.status ?? 'cancelled')
+          })
           return 0
         }
         return prev - 1
@@ -113,20 +148,26 @@ export function BookingPaymentView({
     }
   }, [booking.id])
 
+  // 2b. Dự phòng khi kênh Realtime bị rớt: hỏi lại trạng thái đơn mỗi 8 giây trong lúc chờ cọc
+  useEffect(() => {
+    if (currentStatus !== 'pending') return
+    const supabase = createClient()
+    const poll = setInterval(async () => {
+      const { data } = await supabase.from('bookings').select('status').eq('id', booking.id).maybeSingle()
+      if (data?.status && data.status !== 'pending') setCurrentStatus(data.status)
+    }, 8000)
+    return () => clearInterval(poll)
+  }, [currentStatus, booking.id])
+
   const minutes = Math.floor(timeLeft / 60)
   const seconds = timeLeft % 60
   const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 
-  const orderCode = payment?.order_code || 123456
   const depositAmount = Number(booking.deposit_amount)
-  const transferContent = `SPORT ${orderCode}`
-
-  // VietQR URL (từ PayOS qr_code_url hoặc fallback)
-  const qrUrl =
-    payment?.qr_code_url ||
-    `https://img.vietqr.io/image/MB-0987654321-compact2.png?amount=${depositAmount}&addInfo=${encodeURIComponent(
-      transferContent
-    )}&accountName=CLB%20THE%20THAO`
+  const bank = payment?.metadata
+  const transferContent = bank?.description || (payment ? `SPORT ${payment.order_code}` : '')
+  const qrUrl = payment?.qr_code_url || null
+  const bankName = bank?.bin ? BANK_NAMES[bank.bin] || `Ngân hàng (BIN ${bank.bin})` : null
 
   function copyText(text: string, type: string) {
     navigator.clipboard.writeText(text)
@@ -134,32 +175,19 @@ export function BookingPaymentView({
     setTimeout(() => setCopied(null), 2000)
   }
 
-  // Gọi Webhook PayOS Simulator để kiểm thử Real-time
+  // Chỉ có ở dev khi chưa cấu hình PayOS: giả lập khách đã chuyển khoản
   async function handleSimulateConfirm() {
     setConfirming(true)
+    setError(null)
     try {
-      const res = await fetch('/api/payos/webhook', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderCode,
-          data: {
-            orderCode,
-            amount: depositAmount,
-            reference: `SIM_${Date.now()}`,
-          },
-        }),
-      })
-
-      if (res.ok) {
-        setCurrentStatus('confirmed')
+      const result = await simulateDepositPayment(booking.id)
+      if (result.error) {
+        setError(result.error)
       } else {
-        await confirmBookingDeposit(booking.id)
         setCurrentStatus('confirmed')
       }
     } catch {
-      await confirmBookingDeposit(booking.id)
-      setCurrentStatus('confirmed')
+      setError('Không thể giả lập thanh toán, vui lòng thử lại')
     } finally {
       setConfirming(false)
     }
@@ -270,11 +298,17 @@ export function BookingPaymentView({
         <CardContent className="p-6 flex flex-col items-center justify-center space-y-4">
           {/* QR Code Container */}
           <div className="p-3 bg-white rounded-2xl border-2 border-emerald-500/30 shadow-md">
-            <img
-              src={qrUrl}
-              alt="VietQR PayOS"
-              className="w-56 h-56 object-contain"
-            />
+            {qrUrl ? (
+              <img
+                src={qrUrl}
+                alt="Mã VietQR đặt cọc"
+                className="w-56 h-56 object-contain"
+              />
+            ) : (
+              <div className="w-56 h-56 flex items-center justify-center text-xs text-muted-foreground text-center p-4">
+                Không tải được mã QR. Vui lòng tải lại trang hoặc đặt lại khung giờ.
+              </div>
+            )}
           </div>
 
           <div className="text-center space-y-1">
@@ -286,25 +320,36 @@ export function BookingPaymentView({
 
           {/* Transfer Info Breakdown */}
           <div className="w-full space-y-2 text-xs pt-2 border-t border-border/60">
-            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
-              <span className="text-muted-foreground">Ngân hàng:</span>
-              <span className="font-bold text-foreground">MBBank (Ngân hàng Quân Đội)</span>
-            </div>
-
-            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
-              <span className="text-muted-foreground">Số tài khoản:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-foreground">0987654321</span>
-                <button
-                  type="button"
-                  onClick={() => copyText('0987654321', 'account')}
-                  className="text-muted-foreground hover:text-emerald-600 cursor-pointer"
-                  title="Copy STK"
-                >
-                  {copied === 'account' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
+            {bankName && (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
+                <span className="text-muted-foreground">Ngân hàng:</span>
+                <span className="font-bold text-foreground">{bankName}</span>
               </div>
-            </div>
+            )}
+
+            {bank?.account_number && (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
+                <span className="text-muted-foreground">Số tài khoản:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-foreground">{bank.account_number}</span>
+                  <button
+                    type="button"
+                    onClick={() => copyText(bank.account_number!, 'account')}
+                    className="text-muted-foreground hover:text-emerald-600 cursor-pointer"
+                    title="Copy STK"
+                  >
+                    {copied === 'account' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bank?.account_name && (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
+                <span className="text-muted-foreground">Chủ tài khoản:</span>
+                <span className="font-semibold text-foreground">{bank.account_name}</span>
+              </div>
+            )}
 
             <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
               <span className="text-emerald-800 dark:text-emerald-300 font-semibold">Nội dung chuyển khoản:</span>
@@ -324,21 +369,26 @@ export function BookingPaymentView({
         </CardContent>
 
         <CardFooter className="bg-muted/20 border-t border-border/60 p-4 flex flex-col gap-2">
-          <Button
-            type="button"
-            disabled={confirming}
-            onClick={handleSimulateConfirm}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
-          >
-            {confirming ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Đang xác nhận cọc...
-              </>
-            ) : (
-              'Tôi Đã Chuyển Khoản (Xác Nhận Ngay)'
-            )}
-          </Button>
+          {simulationEnabled && (
+            <>
+              <Button
+                type="button"
+                disabled={confirming}
+                onClick={handleSimulateConfirm}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold cursor-pointer"
+              >
+                {confirming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Đang giả lập...
+                  </>
+                ) : (
+                  '🧪 [DEV] Giả lập đã chuyển khoản'
+                )}
+              </Button>
+              {error && <p className="text-xs text-red-600 text-center">{error}</p>}
+            </>
+          )}
 
           <p className="text-[11px] text-center text-muted-foreground flex items-center justify-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

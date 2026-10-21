@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { NotificationType } from '@/types/database'
 
 export async function getNotifications(limit = 15) {
   const supabase = await createClient()
@@ -79,34 +78,4 @@ export async function markAllNotificationsAsRead() {
 
   revalidatePath('/', 'layout')
   return { success: true }
-}
-
-export async function createNotification(params: {
-  userId: string
-  title: string
-  message: string
-  type?: NotificationType
-  link?: string
-}) {
-  const supabase = await createClient()
-
-  const { data, error } = await supabase
-    .from('notifications')
-    .insert({
-      user_id: params.userId,
-      title: params.title,
-      message: params.message,
-      type: params.type || 'system',
-      link: params.link || null,
-      is_read: false,
-    })
-    .select('id')
-    .single()
-
-  if (error) {
-    console.error('Error creating notification:', error)
-    return null
-  }
-
-  return data
 }
