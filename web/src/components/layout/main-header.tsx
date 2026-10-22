@@ -4,7 +4,7 @@ import { getCurrentUser, getCurrentProfile } from '@/lib/supabase/session'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Compass, Calendar, Building2, LogOut, Flame } from 'lucide-react'
+import { Compass, Calendar, Building2, LogOut, Flame, LifeBuoy, ShieldCheck } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
 import { Logo } from '@/components/brand/logo'
@@ -35,6 +35,7 @@ async function HeaderContent() {
   const profile = user ? await getCurrentProfile() : null
 
   const isOwner = profile?.role === 'owner'
+  const isAdmin = profile?.role === 'admin'
 
   return (
     <header className="border-b border-border/70 bg-background/85 backdrop-blur-md sticky top-0 z-50">
@@ -70,6 +71,24 @@ async function HeaderContent() {
             <Calendar className="w-4 h-4 text-teal-700 dark:text-teal-400" />
             Lịch Đặt Của Tôi
           </Link>
+          {user && (
+            <Link
+              href="/support"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            >
+              <LifeBuoy className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              Hỗ Trợ
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-amber-700 hover:bg-amber-500/10 transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-600" />
+              Quản Trị
+            </Link>
+          )}
           {/* Chỉ hiện Cổng Chủ Sân nếu người dùng là owner */}
           {isOwner && (
             <Link
@@ -97,7 +116,7 @@ async function HeaderContent() {
                     {profile?.full_name || 'Người chơi'}
                   </div>
                   <Badge variant="outline" className="text-xs py-0 px-1 border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
-                    {isOwner ? 'Chủ sân' : 'Người chơi'}
+                    {isAdmin ? 'Quản trị' : isOwner ? 'Chủ sân' : 'Người chơi'}
                   </Badge>
                 </div>
               </div>

@@ -1,117 +1,142 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentUser, getCurrentProfile } from '@/lib/supabase/session'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPlatformStats, parsePeriod, percent, PERIOD_OPTIONS } from '@/lib/admin-stats'
+import { formatNumber, formatVnd } from '@/lib/format'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { PayoutForm, PlanActions } from '@/components/admin/admin-forms'
-import { isProActive } from '@/lib/billing'
-import { formatDate, formatVnd } from '@/lib/format'
-import { ShieldCheck } from 'lucide-react'
+import { BarChart } from '@/components/admin/bar-chart'
+import { AlertTriangle } from 'lucide-react'
 
-export const metadata = { title: 'Quản trị nền tảng' }
+export const metadata = { title: 'Thống kê vận hành' }
 
-export default async function AdminPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect('/login?next=/admin')
-  const profile = await getCurrentProfile()
-  if (profile?.role !== 'admin') redirect('/')
+function dayLabel(day: string) {
+  const [, m, d] = day.split('-')
+  return `${d}/${m}`
+}
 
-  // Trang chỉ dành cho admin nên dùng service_role để xem toàn bộ cụm sân
-  const admin = createAdminClient()
-  const { data: clubs } = await admin
-    .from('clubs')
-    .select('id, name, plan, plan_until, accepts_online_payment, owner:profiles!clubs_owner_id_fkey(full_name), courts(id, is_active)')
-    .order('created_at', { ascending: true })
-  const { data: balances } = await admin.rpc('club_balances')
-  const balanceByClub = new Map((balances ?? []).map((b) => [b.club_id, b]))
+function Kpi({ label, value, hint, accent = false }: { label: string; value: string; hint?: string; accent?: boolean }) {
+  return (
+    <Card>
+      <CardContent className="pt-5 space-y-1">
+        <div className="text-xs font-medium text-muted-foreground">{label}</div>
+        <div className={`text-2xl font-extrabold tabular-nums ${accent ? 'text-emerald-700 dark:text-emerald-400' : ''}`}>{value}</div>
+        {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
+      </CardContent>
+    </Card>
+  )
+}
 
-   
-  const now = new Date()
+export default async function AdminOverviewPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
+  const { days: daysParam } = await searchParams
+  const days = parsePeriod(daysParam)
+  const stats = await getPlatformStats(createAdminClient(), days)
+
+  const confirmedRate = percent(stats.bookings.confirmed, stats.bookings.created)
+  const cancelRate = percent(stats.bookings.cancelled, stats.bookings.created)
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-card/60">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <span className="font-extrabold flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-700 dark:text-emerald-400" aria-hidden /> Quản trị SportArena
-          </span>
-          <Link href="/" className="text-xs text-muted-foreground hover:text-foreground">Về trang chủ</Link>
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold">Thống kê vận hành</h1>
+          <p className="text-sm text-muted-foreground mt-1">Số liệu theo giờ Việt Nam, tính trong {days} ngày gần nhất.</p>
         </div>
-      </header>
+        <nav className="inline-flex rounded-xl border border-border bg-card p-1" aria-label="Khoảng thời gian">
+          {PERIOD_OPTIONS.map((d) => (
+            <Link
+              key={d}
+              href={`/admin?days=${d}`}
+              aria-current={d === days ? 'page' : undefined}
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold ${
+                d === days ? 'bg-emerald-700 text-white' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {d} ngày
+            </Link>
+          ))}
+        </nav>
+      </div>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+      {(stats.open_tickets > 0 || stats.deposits.needs_refund > 0) && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {stats.open_tickets > 0 && (
+            <Link href="/admin/tickets" className="flex items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm hover:bg-amber-500/15">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" aria-hidden />
+              <span><b>{stats.open_tickets}</b> yêu cầu hỗ trợ đang chờ trả lời</span>
+            </Link>
+          )}
+          {stats.deposits.needs_refund > 0 && (
+            <div className="flex items-center gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm">
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" aria-hidden />
+              <span>Có <b>{formatVnd(stats.deposits.needs_refund)}</b> cọc cần hoàn lại cho khách (đặt chậm hoặc trùng giờ)</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <section aria-labelledby="sec-revenue" className="space-y-3">
+        <h2 id="sec-revenue" className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Doanh thu nền tảng</h2>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Kpi label="Doanh thu thuê gói Pro" value={formatVnd(stats.subscriptions.revenue)} hint={`${formatNumber(stats.subscriptions.count)} lượt thanh toán`} accent />
+          <Kpi label="Giá trị đặt sân (GMV)" value={formatVnd(stats.bookings.gmv)} hint="Đơn đã xác nhận, không phải doanh thu của bạn" />
+          <Kpi label="Cọc đã thu" value={formatVnd(stats.deposits.collected)} hint={`Kênh nền tảng ${formatVnd(stats.deposits.platform_channel)} · kênh chủ sân ${formatVnd(stats.deposits.club_channel)}`} />
+          <Kpi label="Đang nợ chủ sân" value={formatVnd(stats.owed_total)} hint="Cọc thu hộ chưa chuyển khoản" />
+        </div>
+      </section>
+
+      <section aria-labelledby="sec-ops" className="space-y-3">
+        <h2 id="sec-ops" className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Vận hành</h2>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Kpi label="Lượt đặt sân" value={formatNumber(stats.bookings.created)} hint={`${confirmedRate}% xác nhận · ${cancelRate}% huỷ · ${stats.bookings.pending} đang chờ cọc`} />
+          <Kpi label="Người dùng" value={formatNumber(stats.users.total)} hint={`+${stats.users.new} mới · ${stats.users.owners} chủ sân · ${stats.users.players} người chơi`} />
+          <Kpi label="Cụm sân" value={formatNumber(stats.clubs.total)} hint={`+${stats.clubs.new} mới · ${stats.clubs.pro} Pro · ${stats.clubs.own_payos} có PayOS riêng`} />
+          <Kpi label="Sân đang hoạt động" value={formatNumber(stats.courts_active)} hint={`${stats.matches.created} kèo mới · ${stats.matches.open} kèo đang mở`} />
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Tiền cọc nền tảng đang thu hộ</CardTitle>
-            <CardDescription>
-              Chỉ gồm các khoản cọc thật đã thanh toán qua kênh PayOS của nền tảng (cụm sân chưa tự kết nối PayOS).
-              Hệ thống không tự chuyển tiền: hãy chuyển khoản cho chủ sân rồi bấm &quot;Ghi nhận đã chuyển&quot;.
-            </CardDescription>
+            <CardTitle>Lượt đặt sân theo ngày</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-5">
-            {(clubs ?? []).map((club) => {
-              const b = balanceByClub.get(club.id)
-              if (!b || (Number(b.collected) === 0 && Number(b.paid_out) === 0)) return null
-              return (
-                <div key={club.id} className="p-4 rounded-xl border border-border space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <div className="font-bold">{club.name}</div>
-                      <div className="text-xs text-muted-foreground">Chủ sân: {club.owner?.full_name || '—'}</div>
-                    </div>
-                    <div className="flex gap-4 text-xs text-right">
-                      <div><div className="text-muted-foreground">Đã thu hộ</div><b>{formatVnd(b.collected)}</b></div>
-                      <div><div className="text-muted-foreground">Đã chi</div><b>{formatVnd(b.paid_out)}</b></div>
-                      <div><div className="text-muted-foreground">Còn nợ chủ sân</div><b className="text-emerald-700 dark:text-emerald-400">{formatVnd(b.owed)}</b></div>
-                    </div>
-                  </div>
-                  <PayoutForm clubId={club.id} owed={Number(b.owed)} />
-                </div>
-              )
-            })}
-            {(balances ?? []).every((b) => Number(b.collected) === 0 && Number(b.paid_out) === 0) && (
-              <p className="text-sm text-muted-foreground">Chưa có khoản cọc nào do nền tảng thu hộ.</p>
-            )}
+          <CardContent>
+            <BarChart title="Số lượt đặt" data={stats.daily.map((d) => ({ label: dayLabel(d.day), value: Number(d.bookings) }))} format={formatNumber} />
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
-            <CardTitle>Cụm sân và gói dịch vụ</CardTitle>
-            <CardDescription>Cấp hoặc gia hạn gói Pro thủ công, xem tình trạng kết nối thanh toán.</CardDescription>
+            <CardTitle>Cọc thu được theo ngày</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {(clubs ?? []).map((club) => {
-              const pro = isProActive(club.plan, club.plan_until, now)
-              const active = (club.courts ?? []).filter((c) => c.is_active).length
-              return (
-                <div key={club.id} className="p-4 rounded-xl border border-border flex flex-wrap items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="font-bold flex items-center gap-2 flex-wrap">
-                      {club.name}
-                      {pro ? (
-                        <Badge className="bg-amber-400 text-slate-900">Pro đến {formatDate(club.plan_until!)}</Badge>
-                      ) : (
-                        <Badge variant="outline">Free</Badge>
-                      )}
-                      {club.accepts_online_payment ? (
-                        <Badge className="bg-emerald-700 text-white">PayOS riêng</Badge>
-                      ) : (
-                        <Badge variant="outline">Dùng kênh nền tảng</Badge>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Chủ sân: {club.owner?.full_name || '—'} · {active} sân đang hoạt động
-                    </div>
-                  </div>
-                  <PlanActions clubId={club.id} />
-                </div>
-              )
-            })}
+          <CardContent>
+            <BarChart title="Tiền cọc" data={stats.daily.map((d) => ({ label: dayLabel(d.day), value: Number(d.deposits) }))} format={formatVnd} barClassName="bg-amber-500" />
           </CardContent>
         </Card>
-      </main>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Cụm sân nổi bật</CardTitle>
+          <CardDescription>Top 5 theo số đơn đã xác nhận trong {days} ngày.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {stats.top_clubs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Chưa có đơn nào được xác nhận trong khoảng này.</p>
+          ) : (
+            <ol className="divide-y divide-border">
+              {stats.top_clubs.map((c, i) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-6 h-6 rounded-full bg-muted text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                    <span className="font-semibold truncate">{c.name}</span>
+                  </span>
+                  <span className="text-right shrink-0">
+                    <b>{formatNumber(c.bookings)}</b> đơn · <span className="text-muted-foreground">{formatVnd(c.gmv)}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -45,7 +45,7 @@ export async function recordPayout(clubId: string, amount: number, note: string)
     })
   }
 
-  revalidatePath('/admin')
+  revalidatePath('/admin/finance')
   revalidatePath('/owner/payments')
   return { success: true }
 }
@@ -74,7 +74,7 @@ export async function grantPlan(clubId: string, months: number): Promise<{ error
     link: '/owner/billing',
   })
 
-  revalidatePath('/admin')
+  revalidatePath('/admin/finance')
   revalidatePath('/owner/billing')
   return { success: true }
 }
@@ -87,7 +87,7 @@ export async function setFreePlan(clubId: string): Promise<{ error?: string; suc
   const { error } = await admin.from('clubs').update({ plan: 'free', plan_until: null }).eq('id', clubId)
   if (error) return { error: 'Không cập nhật được gói' }
 
-  revalidatePath('/admin')
+  revalidatePath('/admin/finance')
   revalidatePath('/owner/billing')
   return { success: true }
 }

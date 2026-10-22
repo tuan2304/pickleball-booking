@@ -28,3 +28,29 @@ export async function notifyUser(params: {
   }
   return true
 }
+
+/** Báo cho mọi quản trị viên (vd. có phiếu hỗ trợ mới hoặc khách vừa trả lời). */
+export async function notifyAdmins(params: { title: string; message: string; link?: string }) {
+  const admin = createAdminClient()
+  const { data: admins, error: listError } = await admin.from('profiles').select('id').eq('role', 'admin')
+  if (listError || !admins?.length) {
+    if (listError) console.error('Không lấy được danh sách quản trị viên:', listError)
+    return false
+  }
+
+  const { error } = await admin.from('notifications').insert(
+    admins.map((a) => ({
+      user_id: a.id,
+      title: params.title,
+      message: params.message,
+      type: 'system' as const,
+      link: params.link ?? null,
+      is_read: false,
+    }))
+  )
+  if (error) {
+    console.error('Không tạo được thông báo cho quản trị viên:', error)
+    return false
+  }
+  return true
+}

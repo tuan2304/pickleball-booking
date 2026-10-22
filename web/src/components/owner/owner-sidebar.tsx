@@ -10,6 +10,7 @@ import {
   Tags,
   Wallet,
   Crown,
+  LifeBuoy,
   LogOut,
   ShieldCheck,
   ChevronRight,
@@ -48,6 +49,11 @@ const NAV_ITEMS = [
     label: 'Gói dịch vụ',
     href: '/owner/billing',
     icon: Crown,
+  },
+  {
+    label: 'Hỗ trợ',
+    href: '/support',
+    icon: LifeBuoy,
   },
 ]
 

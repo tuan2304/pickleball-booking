@@ -1,0 +1,194 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { notifyAdmins, notifyUser } from '@/lib/notify'
+import {
+  isTicketStatus,
+  MAX_ACTIVE_TICKETS_PER_USER,
+  validateNewTicket,
+  validateReply,
+  type TicketStatus,
+} from '@/lib/support'
+
+/**
+ * Mọi thao tác ghi phiếu hỗ trợ đi qua đây (người dùng không có quyền ghi trực tiếp vào bảng),
+ * nên quyền được kiểm tra rõ ràng ở từng hàm.
+ */
+
+async function currentActor() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user.id).maybeSingle()
+  return { supabase, user, name: profile?.full_name?.trim() || 'Người dùng', isAdmin: profile?.role === 'admin' }
+}
+
+export async function createTicket(input: {
+  subject: string
+  category: string
+  body: string
+  clubId?: string | null
+}): Promise<{ error?: string; ticketId?: string }> {
+  const actor = await currentActor()
+  if (!actor) return { error: 'Vui lòng đăng nhập để gửi yêu cầu hỗ trợ' }
+
+  const parsed = validateNewTicket(input)
+  if (!parsed.ok) return { error: parsed.error }
+
+  const admin = createAdminClient()
+
+  const { count } = await admin
+    .from('support_tickets')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', actor.user.id)
+    .in('status', ['open', 'answered'])
+  if ((count ?? 0) >= MAX_ACTIVE_TICKETS_PER_USER) {
+    return { error: `Bạn đang có ${MAX_ACTIVE_TICKETS_PER_USER} yêu cầu chưa giải quyết. Vui lòng chờ hỗ trợ trả lời hoặc đóng bớt yêu cầu cũ.` }
+  }
+
+  // Chỉ gắn cụm sân của chính mình (chủ sân báo vấn đề về sân)
+  let clubId: string | null = null
+  if (input.clubId) {
+    const { data: club } = await actor.supabase.from('clubs').select('id, owner_id').eq('id', input.clubId).maybeSingle()
+    if (club && club.owner_id === actor.user.id) clubId = club.id
+  }
+
+  const { data: ticket, error } = await admin
+    .from('support_tickets')
+    .insert({
+      user_id: actor.user.id,
+      club_id: clubId,
+      subject: parsed.value.subject,
+      category: parsed.value.category,
+      status: 'open',
+    })
+    .select('id')
+    .single()
+  if (error || !ticket) {
+    console.error('createTicket: lỗi tạo phiếu', error)
+    return { error: 'Không gửi được yêu cầu. Vui lòng thử lại.' }
+  }
+
+  const { error: msgError } = await admin.from('ticket_messages').insert({
+    ticket_id: ticket.id,
+    sender_id: actor.user.id,
+    is_staff: false,
+    sender_name: actor.name,
+    body: parsed.value.body,
+  })
+  if (msgError) {
+    console.error('createTicket: lỗi lưu nội dung', msgError)
+    await admin.from('support_tickets').delete().eq('id', ticket.id)
+    return { error: 'Không gửi được yêu cầu. Vui lòng thử lại.' }
+  }
+
+  await notifyAdmins({
+    title: 'Yêu cầu hỗ trợ mới',
+    message: `${actor.name}: ${parsed.value.subject}`,
+    link: `/admin/tickets/${ticket.id}`,
+  })
+
+  revalidatePath('/support')
+  revalidatePath('/admin/tickets')
+  return { ticketId: ticket.id }
+}
+
+export async function replyToTicket(ticketId: string, body: string): Promise<{ error?: string }> {
+  const actor = await currentActor()
+  if (!actor) return { error: 'Vui lòng đăng nhập' }
+
+  const parsed = validateReply(body)
+  if (!parsed.ok) return { error: parsed.error }
+
+  const admin = createAdminClient()
+  const { data: ticket } = await admin.from('support_tickets').select('id, user_id, subject, status').eq('id', ticketId).maybeSingle()
+  if (!ticket) return { error: 'Không tìm thấy yêu cầu hỗ trợ' }
+
+  const isAuthor = ticket.user_id === actor.user.id
+  if (!isAuthor && !actor.isAdmin) return { error: 'Bạn không có quyền trả lời yêu cầu này' }
+  if (ticket.status === 'closed' && !actor.isAdmin) {
+    return { error: 'Yêu cầu này đã đóng. Hãy tạo yêu cầu mới nếu bạn cần thêm hỗ trợ.' }
+  }
+
+  // Quản trị trả lời phiếu của người khác = nhân viên hỗ trợ; còn lại là người dùng
+  const isStaff = actor.isAdmin && !isAuthor
+  const { error } = await admin.from('ticket_messages').insert({
+    ticket_id: ticketId,
+    sender_id: actor.user.id,
+    is_staff: isStaff,
+    sender_name: isStaff ? 'Hỗ trợ SportArena' : actor.name,
+    body: parsed.value,
+  })
+  if (error) {
+    console.error('replyToTicket lỗi', error)
+    return { error: 'Không gửi được tin nhắn. Vui lòng thử lại.' }
+  }
+
+  // Nhân viên trả lời → chờ người dùng; người dùng trả lời (kể cả phiếu đã giải quyết) → mở lại chờ hỗ trợ
+  await admin
+    .from('support_tickets')
+    .update({ status: isStaff ? 'answered' : 'open', last_message_at: new Date().toISOString() })
+    .eq('id', ticketId)
+
+  if (isStaff) {
+    await notifyUser({
+      userId: ticket.user_id,
+      title: 'Hỗ trợ đã trả lời bạn',
+      message: ticket.subject,
+      type: 'system',
+      link: `/support/${ticketId}`,
+    })
+  } else {
+    await notifyAdmins({
+      title: 'Người dùng vừa trả lời yêu cầu hỗ trợ',
+      message: `${actor.name}: ${ticket.subject}`,
+      link: `/admin/tickets/${ticketId}`,
+    })
+  }
+
+  revalidatePath(`/support/${ticketId}`)
+  revalidatePath(`/admin/tickets/${ticketId}`)
+  revalidatePath('/admin/tickets')
+  return {}
+}
+
+export async function setTicketStatus(ticketId: string, status: string): Promise<{ error?: string }> {
+  const actor = await currentActor()
+  if (!actor) return { error: 'Vui lòng đăng nhập' }
+  if (!isTicketStatus(status)) return { error: 'Trạng thái không hợp lệ' }
+
+  const admin = createAdminClient()
+  const { data: ticket } = await admin.from('support_tickets').select('id, user_id, subject').eq('id', ticketId).maybeSingle()
+  if (!ticket) return { error: 'Không tìm thấy yêu cầu hỗ trợ' }
+
+  const isAuthor = ticket.user_id === actor.user.id
+  // Người dùng chỉ được tự đóng yêu cầu của mình; mọi trạng thái khác là việc của quản trị
+  if (!actor.isAdmin && !(isAuthor && status === 'closed')) {
+    return { error: 'Bạn không có quyền đổi trạng thái này' }
+  }
+
+  const next: TicketStatus = status
+  const { error } = await admin.from('support_tickets').update({ status: next }).eq('id', ticketId)
+  if (error) {
+    console.error('setTicketStatus lỗi', error)
+    return { error: 'Không cập nhật được trạng thái' }
+  }
+
+  if (actor.isAdmin && !isAuthor && (next === 'resolved' || next === 'closed')) {
+    await notifyUser({
+      userId: ticket.user_id,
+      title: next === 'resolved' ? 'Yêu cầu hỗ trợ đã được giải quyết' : 'Yêu cầu hỗ trợ đã được đóng',
+      message: ticket.subject,
+      type: 'system',
+      link: `/support/${ticketId}`,
+    })
+  }
+
+  revalidatePath(`/support/${ticketId}`)
+  revalidatePath(`/admin/tickets/${ticketId}`)
+  revalidatePath('/admin/tickets')
+  revalidatePath('/support')
+  return {}
+}

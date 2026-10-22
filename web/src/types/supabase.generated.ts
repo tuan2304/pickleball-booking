@@ -5,7 +5,27 @@ export type Database = {
   
   "public": {
           Tables: {
-            "bookings": {
+            "announcements": {
+                  Row: {
+                    "audience": string,"body": string,"created_at": string,"created_by": string | null,"id": string,"kind": string,"link": string | null,"sent_at": string | null,"sent_count": number,"title": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "audience"?: string,"body": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"link"?: string | null,"sent_at"?: string | null,"sent_count"?: number,"title": string
+                  }
+                  Update: {
+                    "audience"?: string,"body"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"link"?: string | null,"sent_at"?: string | null,"sent_count"?: number,"title"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "announcements_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"bookings": {
                   Row: {
                     "court_id": string,"created_at": string,"deposit_amount": number,"during": unknown,"end_time": string,"expires_at": string,"id": string,"is_open_match": boolean,"note": string | null,"start_time": string,"status": string,"total_price": number,"updated_at": string,"user_id": string
                   }
@@ -327,6 +347,58 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"support_tickets": {
+                  Row: {
+                    "category": string,"club_id": string | null,"created_at": string,"id": string,"last_message_at": string,"status": string,"subject": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "category"?: string,"club_id"?: string | null,"created_at"?: string,"id"?: string,"last_message_at"?: string,"status"?: string,"subject": string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "category"?: string,"club_id"?: string | null,"created_at"?: string,"id"?: string,"last_message_at"?: string,"status"?: string,"subject"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "support_tickets_club_id_fkey"
+      columns: ["club_id"]
+isOneToOne: false
+      referencedRelation: "clubs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "support_tickets_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"ticket_messages": {
+                  Row: {
+                    "body": string,"created_at": string,"id": string,"is_staff": boolean,"sender_id": string | null,"sender_name": string,"ticket_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body": string,"created_at"?: string,"id"?: string,"is_staff"?: boolean,"sender_id"?: string | null,"sender_name"?: string,"ticket_id": string
+                  }
+                  Update: {
+                    "body"?: string,"created_at"?: string,"id"?: string,"is_staff"?: boolean,"sender_id"?: string | null,"sender_name"?: string,"ticket_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "ticket_messages_sender_id_fkey"
+      columns: ["sender_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "ticket_messages_ticket_id_fkey"
+      columns: ["ticket_id"]
+isOneToOne: false
+      referencedRelation: "support_tickets"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -337,6 +409,9 @@ isOneToOne: false
 { Args: { "p_payment_id": string,"p_reference"?: string }; Returns: {
               "club_id": string,"plan_until": string,"user_id": string
             }[]
+                           },
+"broadcast_announcement":
+{ Args: { "p_id": string }; Returns: number
                            },
 "can_review_club":
 { Args: { "p_club": string,"p_user": string }; Returns: boolean
@@ -363,6 +438,9 @@ isOneToOne: false
               "court_id": string,"end_time": string,"start_time": string,"status": string
             }[]
                            },
+"is_admin":
+{ Args: { "p_user": string }; Returns: boolean
+                           },
 "is_match_member":
 { Args: { "p_match": string,"p_user": string }; Returns: boolean
                            },
@@ -371,6 +449,9 @@ isOneToOne: false
                            },
 "pgp_armor_headers":
 { Args: { "": string }; Returns: Record<string, unknown>[]
+                           },
+"platform_stats":
+{ Args: { "p_from": string,"p_to": string }; Returns: Json
                            },
 "uuid_generate_v1":
 { Args: Record<PropertyKey, never>; Returns: string

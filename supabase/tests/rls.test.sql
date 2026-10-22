@@ -159,6 +159,55 @@ SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$SELECT count(*
 SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$INSERT INTO payouts(club_id,amount) VALUES ('11111111-1111-1111-1111-111111111111',1) RETURNING 'x'$$,'ERR','chủ sân không tự ghi khoản chi');
 SELECT t(NULL,'postgres',$$INSERT INTO payouts(club_id,amount) VALUES ('11111111-1111-1111-1111-111111111111',0) RETURNING 'x'$$,'ERR','khoản chi phải lớn hơn 0');
 
+-- ---------------------------------------------------------------- 10. Trang quản trị: ticket, thông báo, thống kê
+INSERT INTO auth.users(id, raw_user_meta_data) VALUES ('99999999-9999-9999-9999-999999999999', '{"full_name":"Quan tri"}');
+UPDATE profiles SET role = 'admin' WHERE id = '99999999-9999-9999-9999-999999999999';
+SELECT t(NULL,'postgres',$$SELECT public.is_admin('99999999-9999-9999-9999-999999999999')::text$$,'true','is_admin nhận ra tài khoản quản trị');
+SELECT t(NULL,'postgres',$$SELECT public.is_admin('c0000000-0000-0000-0000-00000000000c')::text$$,'false','is_admin từ chối người chơi');
+
+-- 10a. Ticket
+INSERT INTO support_tickets(id, user_id, subject, category) VALUES ('d1000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-00000000000c','Khong nhan duoc coc','payment');
+INSERT INTO ticket_messages(ticket_id, sender_id, sender_name, body) VALUES ('d1000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-00000000000c','Chi','Em da chuyen khoan nhung don chua xac nhan');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT count(*)::text FROM support_tickets$$,'1','người dùng xem được phiếu của mình');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT count(*)::text FROM ticket_messages$$,'1','người dùng xem được tin nhắn trong phiếu của mình');
+SELECT t('d0000000-0000-0000-0000-00000000000d','authenticated',$$SELECT count(*)::text FROM support_tickets$$,'0','người khác không thấy phiếu');
+SELECT t('d0000000-0000-0000-0000-00000000000d','authenticated',$$SELECT count(*)::text FROM ticket_messages$$,'0','người khác không đọc được tin nhắn trong phiếu');
+SELECT t(NULL,'anon',$$SELECT count(*)::text FROM support_tickets$$,'0','khách không thấy phiếu');
+SELECT t('99999999-9999-9999-9999-999999999999','authenticated',$$SELECT count(*)::text FROM support_tickets$$,'1','quản trị thấy mọi phiếu');
+SELECT t('99999999-9999-9999-9999-999999999999','authenticated',$$SELECT count(*)::text FROM ticket_messages$$,'1','quản trị đọc được mọi tin nhắn');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$INSERT INTO support_tickets(user_id,subject) VALUES ('c0000000-0000-0000-0000-00000000000c','Tu tao phieu truc tiep') RETURNING 'x'$$,'ERR','tự tạo phiếu trực tiếp bị chặn (phải qua server)');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$INSERT INTO ticket_messages(ticket_id,sender_id,is_staff,sender_name,body) VALUES ('d1000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-00000000000c',true,'Ho tro','Gia mao nhan vien') RETURNING 'x'$$,'ERR','giả mạo tin nhắn của nhân viên hỗ trợ bị chặn');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$UPDATE support_tickets SET status='resolved' WHERE id='d1000000-0000-0000-0000-000000000001' RETURNING 'x'$$,'ERR','tự đổi trạng thái phiếu bị chặn');
+SELECT t(NULL,'postgres',$$INSERT INTO support_tickets(user_id,subject) VALUES ('c0000000-0000-0000-0000-00000000000c','ab') RETURNING 'x'$$,'ERR','tiêu đề phiếu quá ngắn bị ràng buộc chặn');
+SELECT t(NULL,'postgres',$$INSERT INTO ticket_messages(ticket_id,body) VALUES ('d1000000-0000-0000-0000-000000000001', repeat('x', 2001)) RETURNING 'x'$$,'ERR','tin nhắn quá 2000 ký tự bị chặn');
+
+-- 10b. Thông báo cập nhật
+INSERT INTO announcements(id, title, body, audience) VALUES ('a2000000-0000-0000-0000-000000000001','Cap nhat moi','Noi dung thong bao cho chu san','owners');
+INSERT INTO announcements(id, title, body, audience) VALUES ('a2000000-0000-0000-0000-000000000002','Bao tri he thong','Noi dung gui toi tat ca','all');
+INSERT INTO announcements(id, title, body, audience) VALUES ('a2000000-0000-0000-0000-000000000003','Uu dai nguoi choi','Noi dung gui nguoi choi','players');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT count(*)::text FROM announcements$$,'ERR','người dùng không đọc được bảng thông báo hệ thống (chỉ server)');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT public.broadcast_announcement('a2000000-0000-0000-0000-000000000001'::uuid)::text$$,'ERR','người dùng không gọi được hàm gửi thông báo');
+SELECT t(NULL,'service_role',$$SELECT public.broadcast_announcement('a2000000-0000-0000-0000-000000000001'::uuid)::text$$,'3','gửi cho chủ sân: 2 chủ sân + 1 quản trị');
+SELECT t(NULL,'postgres',$$SELECT count(*)::text FROM notifications WHERE title='Cap nhat moi'$$,'3','đã tạo đúng 3 thông báo trong chuông');
+SELECT t(NULL,'service_role',$$SELECT public.broadcast_announcement('a2000000-0000-0000-0000-000000000001'::uuid)::text$$,'ERR','gửi lần hai bị chặn (không tạo thông báo trùng)');
+SELECT t(NULL,'service_role',$$SELECT public.broadcast_announcement('a2000000-0000-0000-0000-000000000002'::uuid)::text$$,'7','gửi cho tất cả: mọi hồ sơ (7 tài khoản)');
+SELECT t(NULL,'service_role',$$SELECT public.broadcast_announcement('a2000000-0000-0000-0000-000000000003'::uuid)::text$$,'4','gửi cho người chơi: đúng 4 người chơi');
+SELECT t(NULL,'postgres',$$SELECT sent_count::text FROM announcements WHERE id='a2000000-0000-0000-0000-000000000003'$$,'4','ghi lại số người đã nhận');
+SELECT t('d0000000-0000-0000-0000-00000000000d','authenticated',$$SELECT count(*)::text FROM notifications WHERE title='Cap nhat moi'$$,'0','người chơi không nhận thông báo dành riêng cho chủ sân');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$SELECT count(*)::text FROM notifications WHERE title='Cap nhat moi'$$,'1','chủ sân nhận được thông báo của mình');
+
+-- 10c. Thống kê
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT public.platform_stats(now() - interval '30 days', now() + interval '1 day')::text$$,'ERR','người dùng không gọi được hàm thống kê');
+SELECT t(NULL,'service_role',$$SELECT (public.platform_stats(now() - interval '30 days', now() + interval '1 day')->'deposits'->>'collected')$$,'175000','cọc thật đã thu (bỏ giả lập)');
+SELECT t(NULL,'service_role',$$SELECT (public.platform_stats(now() - interval '30 days', now() + interval '1 day')->'deposits'->>'platform_channel')$$,'125000','cọc qua kênh nền tảng');
+SELECT t(NULL,'service_role',$$SELECT (public.platform_stats(now() - interval '30 days', now() + interval '1 day')->'deposits'->>'club_channel')$$,'50000','cọc qua kênh riêng của chủ sân');
+SELECT t(NULL,'service_role',$$SELECT (public.platform_stats(now() - interval '30 days', now() + interval '1 day')->'deposits'->>'needs_refund')$$,'20000','cọc cần hoàn tiền');
+SELECT t(NULL,'service_role',$$SELECT (public.platform_stats(now() - interval '30 days', now() + interval '1 day')->'subscriptions'->>'revenue')$$,'796000','doanh thu thuê bao (199k + 597k)');
+SELECT t(NULL,'service_role',$$SELECT (public.platform_stats(now() - interval '30 days', now() + interval '1 day')->>'open_tickets')$$,'1','số phiếu đang chờ xử lý');
+SELECT t(NULL,'service_role',$$SELECT (jsonb_array_length(public.platform_stats(now() - interval '30 days', now() + interval '1 day')->'daily') BETWEEN 31 AND 33)::text$$,'true','chuỗi theo ngày có đủ số ngày của khoảng');
+SELECT t(NULL,'service_role',$$SELECT (jsonb_array_length(public.platform_stats(now() - interval '30 days', now() + interval '1 day')->'top_clubs') >= 1)::text$$,'true','có cụm sân trong bảng xếp hạng');
+SELECT t(NULL,'service_role',$$SELECT (public.platform_stats(now() + interval '10 days', now() + interval '11 days')->'deposits'->>'collected')$$,'0','khoảng không có giao dịch cho kết quả 0');
+
 -- ---------------------------------------------------------------- Tổng kết
 SELECT CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END AS ket_qua, label AS ca_kiem_thu, CASE WHEN ok THEN '' ELSE detail END AS chi_tiet FROM test_results ORDER BY ok, label;
 DO $$
