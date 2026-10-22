@@ -1,0 +1,102 @@
+import { Label } from '@/components/ui/label'
+import { Check } from 'lucide-react'
+import { DURATION_OPTIONS } from '@/lib/booking-slots'
+
+interface HourStepProps {
+  hours: number[]
+  startHour: number | null
+  duration: number
+  isBooked: (hour: number) => boolean
+  isPast: (hour: number) => boolean
+  isDurationAvailable: (duration: number) => boolean
+  onSelectHour: (hour: number) => void
+  onSelectDuration: (duration: number) => void
+}
+
+export function HourStep({
+  hours,
+  startHour,
+  duration,
+  isBooked,
+  isPast,
+  isDurationAvailable,
+  onSelectHour,
+  onSelectDuration,
+}: HourStepProps) {
+  return (
+    <>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-bold text-foreground">3. Chọn giờ bắt đầu</Label>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Còn trống
+            </span>
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" /> Đã kín
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+          {hours.map((hour) => {
+            const booked = isBooked(hour)
+            const unavailable = booked || isPast(hour)
+            const isSelected = startHour === hour
+            const label = `${hour.toString().padStart(2, '0')}:00`
+
+            return (
+              <button
+                key={hour}
+                type="button"
+                disabled={unavailable}
+                aria-pressed={isSelected}
+                aria-label={booked ? `${label}, đã kín` : label}
+                onClick={() => onSelectHour(hour)}
+                className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  unavailable
+                    ? 'bg-muted/40 text-muted-foreground/60 border border-border/40 cursor-not-allowed line-through'
+                    : isSelected
+                    ? 'bg-emerald-700 text-white shadow-md shadow-emerald-600/30 scale-102 ring-2 ring-emerald-500 ring-offset-2 ring-offset-background'
+                    : 'bg-card border border-border text-foreground hover:border-emerald-500/50 hover:bg-emerald-500/5 cursor-pointer'
+                }`}
+              >
+                <span>{label}</span>
+                {isSelected && <Check className="w-3 h-3 text-white" aria-hidden />}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {startHour !== null && (
+        <div className="space-y-2 pt-2 border-t border-border">
+          <Label className="text-xs font-bold text-foreground">Thời lượng chơi</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            {DURATION_OPTIONS.map((dur) => {
+              const available = isDurationAvailable(dur)
+              return (
+                <button
+                  key={dur}
+                  type="button"
+                  disabled={!available}
+                  aria-pressed={duration === dur}
+                  onClick={() => onSelectDuration(dur)}
+                  className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                    !available
+                      ? 'bg-muted/40 text-muted-foreground/60 cursor-not-allowed line-through'
+                      : duration === dur
+                      ? 'bg-emerald-700 text-white shadow-xs cursor-pointer'
+                      : 'bg-muted text-muted-foreground hover:text-foreground cursor-pointer'
+                  }`}
+                >
+                  {dur} tiếng
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}

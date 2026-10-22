@@ -383,7 +383,7 @@ export function BookingPaymentView({
                   '[DEV] Giả lập đã chuyển khoản'
                 )}
               </Button>
-              {error && <p className="text-xs text-red-600 text-center">{error}</p>}
+              {error && <p role="alert" className="text-xs text-red-700 dark:text-red-400 text-center">{error}</p>}
             </>
           )}
 

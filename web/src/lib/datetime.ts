@@ -1,5 +1,7 @@
-/** Mọi tính toán nghiệp vụ (giá, giờ mở cửa) đều theo giờ Việt Nam, không phụ thuộc múi giờ của server. */
+/** Mọi tính toán nghiệp vụ (giá, giờ mở cửa) đều theo giờ Việt Nam, không phụ thuộc múi giờ của server/trình duyệt. */
 export const VN_TIMEZONE = 'Asia/Ho_Chi_Minh'
+/** Việt Nam không có giờ mùa hè nên độ lệch cố định */
+const VN_OFFSET = '+07:00'
 
 const WEEKDAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
 
@@ -37,4 +39,22 @@ export function getVnParts(date: Date): VnParts {
     time: `${hour}:${parts.minute}:${parts.second}`,
     minutesOfDay: Number(hour) * 60 + Number(parts.minute),
   }
+}
+
+/** Ngày (yyyy-mm-dd) theo giờ VN của một thời điểm. Khác `toISOString()` vốn trả về ngày UTC. */
+export function vnDateKey(at: Date | number): string {
+  return getVnParts(at instanceof Date ? at : new Date(at)).dateKey
+}
+
+/** Cộng/trừ ngày trên chuỗi yyyy-mm-dd */
+export function addDaysToDateKey(dateKey: string, days: number): string {
+  const [y, m, d] = dateKey.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
+
+/** Thời điểm tuyệt đối ứng với `hour:minute` của ngày `dateKey` theo giờ VN. */
+export function vnDateTime(dateKey: string, hour: number, minute = 0): Date {
+  const hh = String(Math.floor(hour)).padStart(2, '0')
+  const mm = String(minute).padStart(2, '0')
+  return new Date(`${dateKey}T${hh}:${mm}:00${VN_OFFSET}`)
 }

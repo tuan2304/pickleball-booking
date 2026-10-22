@@ -1,0 +1,91 @@
+import { describe, expect, it } from 'vitest'
+import {
+  hourRange,
+  isDurationAvailable,
+  isHourBooked,
+  isHourPast,
+  overlapsBusy,
+  type BusySlot,
+} from './booking-slots'
+import { vnDateTime } from './datetime'
+
+const DATE = '2026-10-23'
+const COURT = 'court-1'
+
+// Tạo đơn bằng giờ VN cho dễ đọc
+const busy = (from: [number, number], to: [number, number], extra: Partial<BusySlot> = {}): BusySlot => ({
+  court_id: COURT,
+  status: 'confirmed',
+  start_time: vnDateTime(DATE, from[0], from[1]).toISOString(),
+  end_time: vnDateTime(DATE, to[0], to[1]).toISOString(),
+  ...extra,
+})
+
+describe('hourRange', () => {
+  it('từ giờ mở cửa đến trước giờ đóng cửa', () => {
+    expect(hourRange('06:00:00', '09:00:00')).toEqual([6, 7, 8])
+  })
+
+  it('rơi về 6h-23h nếu dữ liệu giờ không đọc được', () => {
+    const hours = hourRange('', '')
+    expect(hours[0]).toBe(6)
+    expect(hours.at(-1)).toBe(22)
+  })
+})
+
+describe('isHourBooked', () => {
+  it('ô giờ nằm trong đơn thì kín, ô ngay sau đơn thì trống', () => {
+    const list = [busy([18, 0], [19, 0])]
+    expect(isHourBooked(list, COURT, DATE, 18)).toBe(true)
+    expect(isHourBooked(list, COURT, DATE, 17)).toBe(false)
+    expect(isHourBooked(list, COURT, DATE, 19)).toBe(false)
+  })
+
+  it('đơn kết thúc 19:30 thì ô 19:00 vẫn kín (lỗi cũ chỉ so sánh theo giờ nguyên)', () => {
+    const list = [busy([18, 0], [19, 30])]
+    expect(isHourBooked(list, COURT, DATE, 19)).toBe(true)
+    expect(isHourBooked(list, COURT, DATE, 20)).toBe(false)
+  })
+
+  it('bỏ qua đơn đã hủy và đơn của sân khác', () => {
+    expect(isHourBooked([busy([18, 0], [19, 0], { status: 'cancelled' })], COURT, DATE, 18)).toBe(false)
+    expect(isHourBooked([busy([18, 0], [19, 0], { court_id: 'court-2' })], COURT, DATE, 18)).toBe(false)
+  })
+
+  it('đơn của ngày khác không ảnh hưởng', () => {
+    expect(isHourBooked([busy([18, 0], [19, 0])], COURT, '2026-10-24', 18)).toBe(false)
+  })
+})
+
+describe('overlapsBusy', () => {
+  it('hai khoảng sát nhau (kết thúc đúng lúc bắt đầu) không tính là chồng', () => {
+    const list = [busy([18, 0], [19, 0])]
+    expect(overlapsBusy(list, COURT, vnDateTime(DATE, 19), vnDateTime(DATE, 20))).toBe(false)
+    expect(overlapsBusy(list, COURT, vnDateTime(DATE, 17), vnDateTime(DATE, 18))).toBe(false)
+    expect(overlapsBusy(list, COURT, vnDateTime(DATE, 17), vnDateTime(DATE, 18, 1))).toBe(true)
+  })
+})
+
+describe('isHourPast', () => {
+  it('ô giờ đã kết thúc thì coi là qua, ô đang diễn ra thì chưa', () => {
+    const now = vnDateTime(DATE, 10, 30).getTime()
+    expect(isHourPast(DATE, 9, now)).toBe(true)
+    expect(isHourPast(DATE, 10, now)).toBe(false)
+    expect(isHourPast(DATE, 11, now)).toBe(false)
+  })
+})
+
+describe('isDurationAvailable', () => {
+  const base = { courtId: COURT, dateKey: DATE, closeHour: 23 }
+
+  it('không cho vượt giờ đóng cửa', () => {
+    expect(isDurationAvailable({ ...base, busy: [], startHour: 21, duration: 2 })).toBe(true)
+    expect(isDurationAvailable({ ...base, busy: [], startHour: 21, duration: 2.5 })).toBe(false)
+  })
+
+  it('không cho đè lên đơn kế tiếp', () => {
+    const list = [busy([20, 0], [21, 0])]
+    expect(isDurationAvailable({ ...base, busy: list, startHour: 18, duration: 2 })).toBe(true)
+    expect(isDurationAvailable({ ...base, busy: list, startHour: 18, duration: 2.5 })).toBe(false)
+  })
+})

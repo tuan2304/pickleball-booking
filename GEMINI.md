@@ -187,3 +187,10 @@
     - Mobile: khóa Supabase sang `EXPO_PUBLIC_*`, nút đổi tài khoản mẫu chỉ ở `__DEV__`.
     - Dọn dẹp: `middleware.ts` -> `proxy.ts`, gỡ `socket.io`, sửa `.gitignore`.
     - **Việc còn lại của bạn:** chạy `supabase db push`, bật `pg_cron`, điền khóa PayOS + đăng ký Webhook URL, xóa/đổi mật khẩu tài khoản seed trên DB production. Chi tiết trong [DEPLOYMENT.md](DEPLOYMENT.md) và [IMPROVEMENTS.md](IMPROVEMENTS.md).
+- **2026-10-22 (Dọn code, tối ưu hiệu năng, UI/UX, test, CI):**
+    - Hiệu năng trên Vercel: `web/vercel.json` đặt vùng `sin1` (cùng Singapore với Supabase), `lib/supabase/session.ts` (React.cache) để mỗi request chỉ gọi Auth/profile một lần, header tải qua `Suspense`, các truy vấn độc lập chạy song song, `next/image` cho ảnh đã whitelist.
+    - Dọn code: `lib/constants.ts` + `lib/format.ts` (ép múi giờ VN) thay cho nhãn/hàm định dạng lặp ở nhiều file; type DB tách thành `supabase.generated.ts` (cập nhật bằng `npm run db:types`); eslint từ 30 lỗi + 41 cảnh báo xuống 0.
+    - Tách file lớn: `match-detail-view` 685 → 209 dòng (thư mục `matches/detail/`), `time-slot-picker` 571 → 182 dòng (thư mục `booking/picker/` + `lib/booking-slots.ts`).
+    - Sửa lỗi phát hiện trong lúc dọn: (1) `bookings.matches` là quan hệ 1-1 nên API trả object, code cũ đọc như mảng nên luôn coi đơn chưa có kèo; (2) nút 'Hôm nay' và bảng giờ lấy ngày theo UTC (sai trước 7h sáng giờ VN); (3) đơn kết thúc 19:30 không làm kín ô 19:00; (4) giờ trên các trang server lệch 7 tiếng vì dùng múi giờ máy chủ.
+    - UI/UX theo bộ hướng dẫn ui-ux-pro-max (xem [DESIGN.md](DESIGN.md)): sửa tương phản nút/chữ (trắng trên emerald-600 chỉ 3,77:1, trên amber-500 chỉ 2,15:1), chữ tối thiểu 12px, thay emoji bằng icon SVG, aria-label/role=alert/aria-busy, vùng chạm lớn hơn trên màn hình cảm ứng.
+    - Test: 48 test đơn vị (vitest: múi giờ, giá, lịch, định dạng, `settlePayment` với DB giả lập, webhook) + 39 ca kiểm thử bảo mật DB (`npm run db:test`, cần Docker). CI GitHub Actions ở `.github/workflows/ci.yml`.

@@ -32,7 +32,15 @@
 | P1-6 Đồng hồ máy khách | ✅ Đã sửa | Đếm ngược theo giờ server + polling dự phòng khi Realtime rớt |
 | Lịch bận hiển thị sai (phát hiện thêm) | ✅ Đã sửa | RPC `get_busy_slots` — trước đây người chơi chỉ thấy đơn của chính mình |
 | P2-5, P2-6, P2-8, P2-9 | ✅ Đã sửa | `proxy.ts`, gỡ `socket.io`, `.env.example` không còn bị ignore, `supabase/.temp` được ignore |
-| P2 còn lại, P3 | ⏳ Chưa làm | Test tự động, `gen types`, `next/image`, hồ sơ người dùng, hoàn tiền, mobile đặt sân... |
+| P2-1 Test tự động | ✅ Đã làm | 48 test đơn vị + 39 ca kiểm thử bảo mật DB, chạy trong CI |
+| P2-2 `any` / `gen types` | ✅ Đã làm | Type sinh từ DB thật (`npm run db:types`); eslint 0 lỗi, 0 cảnh báo |
+| P2-3 Lọc sân ở phía JS | ⏳ Chưa làm | `/clubs` vẫn tải toàn bộ rồi lọc; chuyển vào truy vấn + phân trang khi số sân tăng |
+| P2-4 `next/image` | ✅ Đã làm | Cho domain đã whitelist; URL ảnh lạ giữ `<img>` |
+| P2-7 Trùng migration notifications | ⏳ Bỏ qua có chủ đích | Hai file đã áp lên DB thật nên không sửa lịch sử |
+| P2-10..12 SEO, error.tsx, tối ưu Realtime | ⏳ Chưa làm | |
+| Hiệu năng Vercel | ✅ Đã làm | Vùng `sin1`, cache auth theo request, song song hóa truy vấn |
+| CI | ✅ Đã làm | `.github/workflows/ci.yml`: typecheck, lint, test, build, DB test, mobile typecheck |
+| P3 (hồ sơ người dùng, hoàn tiền, ảnh sân, mobile đặt sân...) | ⏳ Chưa làm | Cần xác nhận nghiệp vụ trước |
 
 **Quyết định nghiệp vụ đã chọn (có thể đổi):** mỗi người giữ tối đa 3 đơn chưa cọc; đặt tối đa 6 giờ/đơn và trước tối đa 60 ngày; được đánh giá khi đơn đã `completed` hoặc đã `confirmed` và qua giờ kết thúc; giá tính theo khung giờ của thời điểm **bắt đầu** (như cũ); tiền về sau khi đơn hết hạn thì cố giữ lại sân, nếu sân đã bị người khác đặt thì đánh dấu `needs_refund` và báo người dùng.
 

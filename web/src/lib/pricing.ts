@@ -19,6 +19,8 @@ export interface PriceResult {
   pricePerHour: number
   totalPrice: number
   depositAmount: number
+  /** true nếu có khung giá đặc biệt (giờ vàng, cuối tuần...) áp dụng */
+  ruleApplied: boolean
 }
 
 /**
@@ -28,11 +30,13 @@ export interface PriceResult {
 export function computePrice({ start, end, basePricePerHour, depositPercentage, rules }: PriceInput): PriceResult {
   const { dayOfWeek, time } = getVnParts(start)
   let pricePerHour = Number(basePricePerHour)
+  let ruleApplied = false
 
   for (const rule of rules ?? []) {
     const days = rule.days_of_week ?? []
     if (days.includes(dayOfWeek) && time >= rule.start_time && time < rule.end_time) {
       pricePerHour = Number(rule.price_per_hour)
+      ruleApplied = true
       break
     }
   }
@@ -43,5 +47,5 @@ export function computePrice({ start, end, basePricePerHour, depositPercentage, 
   const percent = depositPercentage ?? 30
   const depositAmount = Math.round((totalPrice * percent) / 100)
 
-  return { pricePerHour, totalPrice, depositAmount }
+  return { pricePerHour, totalPrice, depositAmount, ruleApplied }
 }

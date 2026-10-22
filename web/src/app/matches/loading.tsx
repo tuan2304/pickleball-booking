@@ -1,6 +1,7 @@
 export default function MatchesLoading() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" role="status" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Đang tải dữ liệu...</span>
       <div className="h-16 border-b border-border/70" />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <div className="space-y-3">
