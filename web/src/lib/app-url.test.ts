@@ -21,6 +21,23 @@ describe('resolveAppUrl', () => {
     )
   })
 
+  it('trên Vercel: biến lỡ đặt thành localhost thì dùng domain thật Vercel cung cấp', () => {
+    expect(
+      resolveAppUrl({
+        NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+        VERCEL_PROJECT_PRODUCTION_URL: 'pickleball-booking.vercel.app',
+      })
+    ).toBe('https://pickleball-booking.vercel.app')
+  })
+
+  it('danh sách lẫn localhost và địa chỉ thật thì chọn địa chỉ thật', () => {
+    expect(resolveAppUrl({ NEXT_PUBLIC_APP_URL: 'http://localhost:3000;https://a.vn' })).toBe('https://a.vn')
+  })
+
+  it('chỉ có localhost thì vẫn dùng localhost (chạy trên máy)', () => {
+    expect(resolveAppUrl({ NEXT_PUBLIC_APP_URL: 'http://localhost:3001' })).toBe('http://localhost:3001')
+  })
+
   it('bỏ qua giá trị rác và rơi về localhost', () => {
     expect(resolveAppUrl({ NEXT_PUBLIC_APP_URL: 'khong-phai-url' })).toBe('http://localhost:3000')
     expect(resolveAppUrl({})).toBe('http://localhost:3000')
