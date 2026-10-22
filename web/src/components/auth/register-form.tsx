@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trophy, ArrowRight, Loader2, AlertCircle, Building2, User } from 'lucide-react'
+import { ArrowRight, Loader2, AlertCircle, Building2, User } from 'lucide-react'
 
+import { LogoMark } from '@/components/brand/logo'
 export function RegisterForm() {
   const [role, setRole] = useState<UserRole>('owner')
   const [error, setError] = useState<string | null>(null)
@@ -34,9 +35,7 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-lg shadow-xl border-emerald-500/20 bg-card/90 backdrop-blur-sm">
       <CardHeader className="space-y-2 text-center pb-6">
-        <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shadow-inner">
-          <Trophy className="w-6 h-6" />
-        </div>
+        <LogoMark size={56} className="mx-auto drop-shadow-sm" decorative={false} />
         <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
           Đăng ký tài khoản
         </CardTitle>

@@ -212,3 +212,7 @@
     - Chặn xóa cụm sân/sân con đã có đơn hoặc giao dịch (xóa dây chuyền làm mất sổ sách tiền cọc, khoản chi, lịch sử thuê bao); nút Kích hoạt/Tạm ngưng và Xóa nay hiển thị lỗi thay vì nuốt.
     - Webhook: JSON hợp lệ nhưng thiếu `orderCode` trả 200 (không làm hỏng việc đăng ký webhook).
     - Đã kiểm tra: URL bản đồ nhúng không khóa của Google không bị chặn nhúng (trang cuối không có X-Frame-Options/frame-ancestors); audit toàn bộ Server Actions; quét bí mật trong diff: sạch.
+- **2026-10-22 (Logo mới):**
+    - Thay logo cúp + chữ bằng logo chữ S dựng từ vòng tròn giữa sân với quả bóng vàng. Bản thiết kế (4 bảng: logo chính, biến thể, ứng dụng, quy chuẩn) làm trên canvas thiết kế; quy chuẩn tóm tắt trong [DESIGN.md](DESIGN.md).
+    - Component dùng chung [components/brand/logo.tsx](web/src/components/brand/logo.tsx) (`Logo`, `LogoMark`, `Wordmark`) thay logo ở trang chủ, thanh điều hướng, thanh bên chủ sân, đăng nhập, đăng ký.
+    - `npm run brand:generate` ([scripts/generate-brand-assets.mjs](web/scripts/generate-brand-assets.mjs)) sinh toàn bộ ảnh từ một nguồn: SVG biến thể, `icon.svg`, `favicon.ico`, `apple-icon.png`, icon web 192/512, và 6 ảnh cho mobile (icon, Android adaptive/monochrome, splash, favicon). App mobile đổi tên hiển thị thành SportArena.

@@ -19,6 +19,19 @@ Năng động, rõ ràng, "thể thao" nhưng dễ đọc. Xanh lá = sân còn 
 - Cỡ chữ tối thiểu **12px** (`text-xs`). Không dùng `text-[10px]`/`text-[11px]`.
 - Tiêu đề dùng `font-extrabold`; thân bài `font-medium`/`font-semibold` cho nhãn.
 
+## Logo
+
+Chữ **S** dựng từ vòng tròn giữa sân (hai cung bán kính 12 trên lưới 96 × 96), vạch giữa sân đi qua điểm nối, **quả bóng vàng** ở đầu chữ S là điểm hẹn / ghim vị trí. Chữ **SPORT** màu mực, **ARENA** màu xanh sân, font Barlow Condensed 800 in hoa.
+
+| Cần dùng | Cách dùng |
+| :-- | :-- |
+| Trong giao diện web | `<Logo size={36} />` (bản ngang), `<LogoMark />` (chỉ biểu tượng), `<Wordmark />` (chỉ chữ) từ `components/brand/logo.tsx`. Không vẽ logo bằng tay ở nơi khác |
+| Biến thể biểu tượng | `badge` (mặc định), `white` (trên nền xanh), `bare-dark` / `bare-light` (không khung, trên ảnh hoặc nền trơn) |
+| File ảnh | `web/public/brand/*.svg`; favicon, `apple-icon.png`, icon app mobile đều sinh từ một nguồn |
+| Đổi logo | Sửa hình học ở `web/scripts/generate-brand-assets.mjs` và `components/brand/logo.tsx`, rồi chạy `npm run brand:generate` trong `web/` |
+
+Quy tắc: vùng an toàn xung quanh = ¼ chiều cao biểu tượng; biểu tượng nhỏ nhất 16 px (từ 32 px trở xuống dùng bản nhỏ, nền phẳng, không vạch sân mờ); bản ngang rộng tối thiểu 120 px. Không kéo giãn, không đổi màu, không thêm bóng đổ, không đặt khung xanh lên nền cùng tông xanh (dùng biến thể `white`).
+
 ## Màu và tương phản (WCAG AA: chữ thường ≥ 4,5 : 1)
 | Cách dùng | Màu | Tương phản |
 | :-- | :-- | :-- |

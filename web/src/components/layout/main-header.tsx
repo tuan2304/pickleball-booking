@@ -4,21 +4,17 @@ import { getCurrentUser, getCurrentProfile } from '@/lib/supabase/session'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Compass, Calendar, Building2, LogOut, Flame } from 'lucide-react'
+import { Compass, Calendar, Building2, LogOut, Flame } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
+import { Logo } from '@/components/brand/logo'
 /** Khung header hiển thị ngay lập tức trong lúc chờ thông tin đăng nhập */
 function HeaderFallback() {
   return (
     <header className="border-b border-border/70 bg-background/85 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-700 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
-            <Trophy className="w-5 h-5" />
-          </div>
-          <span className="font-extrabold tracking-wide text-2xl text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-            SPORT<span className="text-emerald-700 dark:text-emerald-400">ARENA</span>
-          </span>
+        <Link href="/" aria-label="SportArena, về trang chủ" className="flex items-center">
+          <Logo size={36} />
         </Link>
         <div className="skeleton h-8 w-32 rounded-lg" />
       </div>
@@ -44,13 +40,11 @@ async function HeaderContent() {
     <header className="border-b border-border/70 bg-background/85 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="group/logo flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-700 text-white flex items-center justify-center shadow-md shadow-emerald-600/30 transition-transform duration-300 group-hover/logo:rotate-12 group-hover/logo:scale-110">
-            <Trophy className="w-5 h-5" />
-          </div>
-          <span className="font-extrabold tracking-wide text-2xl text-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-            SPORT<span className="text-emerald-700 dark:text-emerald-400">ARENA</span>
-          </span>
+        <Link href="/" aria-label="SportArena, về trang chủ" className="group/logo flex items-center">
+          <Logo
+            size={36}
+            markClassName="transition-transform duration-300 group-hover/logo:rotate-6 group-hover/logo:scale-105"
+          />
         </Link>
 
         {/* Center Nav Links */}
