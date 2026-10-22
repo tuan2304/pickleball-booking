@@ -1,27 +1,29 @@
 import { PayOS } from '@payos/node'
 
-const clientId = process.env.PAYOS_CLIENT_ID || ''
-const apiKey = process.env.PAYOS_API_KEY || ''
-const checksumKey = process.env.PAYOS_CHECKSUM_KEY || ''
-
 const isProduction = process.env.NODE_ENV === 'production'
 
-let payosInstance: PayOS | null = null
-if (clientId && apiKey && checksumKey) {
-  try {
-    payosInstance = new PayOS({ clientId, apiKey, checksumKey })
-  } catch (err) {
-    console.error('Không khởi tạo được PayOS client:', err)
-  }
+/** Bộ khóa của một kênh thanh toán PayOS (của nền tảng, hoặc của riêng một cụm sân). */
+export interface PayosCredentials {
+  clientId: string
+  apiKey: string
+  checksumKey: string
+}
+
+/** Kênh PayOS của nền tảng (biến môi trường). Dùng cho thuê bao và cho cụm sân chưa tự kết nối PayOS. */
+export function getPlatformCredentials(): PayosCredentials | null {
+  const clientId = process.env.PAYOS_CLIENT_ID || ''
+  const apiKey = process.env.PAYOS_API_KEY || ''
+  const checksumKey = process.env.PAYOS_CHECKSUM_KEY || ''
+  return clientId && apiKey && checksumKey ? { clientId, apiKey, checksumKey } : null
 }
 
 export function isPayOSConfigured(): boolean {
-  return payosInstance !== null
+  return getPlatformCredentials() !== null
 }
 
 /**
  * Chế độ giả lập (nút "xác nhận ngay", QR mẫu) chỉ tồn tại khi KHÔNG phải production
- * và chưa cấu hình khóa PayOS. Ở production luôn là false.
+ * và nền tảng chưa cấu hình khóa PayOS. Ở production luôn là false.
  */
 export function isPaymentSimulationEnabled(): boolean {
   return !isProduction && !isPayOSConfigured()
@@ -32,6 +34,10 @@ export class PaymentGatewayError extends Error {
     super(message, options)
     this.name = 'PaymentGatewayError'
   }
+}
+
+function clientFor(creds: PayosCredentials): PayOS {
+  return new PayOS({ clientId: creds.clientId, apiKey: creds.apiKey, checksumKey: creds.checksumKey })
 }
 
 export interface CreatePaymentLinkParams {
@@ -74,12 +80,20 @@ function buildVietQrImageUrl(p: {
   return `https://img.vietqr.io/image/${p.bin}-${p.accountNumber}-compact2.png?${qs.toString()}`
 }
 
-export async function createPaymentLink(params: CreatePaymentLinkParams): Promise<PaymentLinkResult> {
+/**
+ * Tạo link/QR thanh toán bằng đúng kênh `creds`.
+ * `creds = null` nghĩa là không có kênh thật: ở production báo lỗi, ở dev dùng QR mẫu để thử luồng.
+ * Đã có `creds` mà PayOS lỗi thì luôn báo lỗi, không bao giờ dựng QR dự phòng (khách có thể chuyển nhầm tài khoản).
+ */
+export async function createPaymentLink(
+  params: CreatePaymentLinkParams,
+  creds: PayosCredentials | null
+): Promise<PaymentLinkResult> {
   const description = params.description.slice(0, 25)
 
-  if (payosInstance) {
+  if (creds) {
     try {
-      const res = await payosInstance.paymentRequests.create({
+      const res = await clientFor(creds).paymentRequests.create({
         orderCode: params.orderCode,
         amount: params.amount,
         description,
@@ -108,12 +122,11 @@ export async function createPaymentLink(params: CreatePaymentLinkParams): Promis
       }
     } catch (err) {
       console.error('Gọi PayOS tạo link thanh toán thất bại:', err)
-      // Ở production tuyệt đối không dựng QR dự phòng: khách có thể chuyển tiền vào tài khoản không phải của hệ thống
-      if (isProduction) {
-        throw new PaymentGatewayError('Cổng thanh toán đang gặp sự cố, vui lòng thử lại sau ít phút.', { cause: err })
-      }
+      throw new PaymentGatewayError('Cổng thanh toán đang gặp sự cố, vui lòng thử lại sau ít phút.', { cause: err })
     }
-  } else if (isProduction) {
+  }
+
+  if (isProduction) {
     throw new PaymentGatewayError('Hệ thống thanh toán chưa được cấu hình.')
   }
 
@@ -138,12 +151,11 @@ export interface VerifiedWebhook {
   success: boolean
 }
 
-/** Xác thực chữ ký webhook. Trả về null nếu sai chữ ký hoặc chưa cấu hình PayOS. */
-export async function verifyPaymentWebhook(body: unknown): Promise<VerifiedWebhook | null> {
-  if (!payosInstance) return null
+/** Xác thực chữ ký webhook bằng khóa của đúng kênh. Trả về null nếu sai chữ ký. */
+export async function verifyPaymentWebhook(body: unknown, creds: PayosCredentials): Promise<VerifiedWebhook | null> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await payosInstance.webhooks.verify(body as any)
+    const data = await clientFor(creds).webhooks.verify(body as any)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const webhook = body as any
     return {
@@ -155,5 +167,34 @@ export async function verifyPaymentWebhook(body: unknown): Promise<VerifiedWebho
   } catch (err) {
     console.warn('Chữ ký webhook PayOS không hợp lệ:', err instanceof Error ? err.message : err)
     return null
+  }
+}
+
+export interface RegisteredWebhook {
+  webhookUrl: string
+  accountName: string
+  accountNumber: string
+  bankName: string
+}
+
+/**
+ * Đăng ký Webhook URL cho một kênh PayOS. Đồng thời là phép thử khóa: sai khóa thì PayOS từ chối.
+ * PayOS sẽ gửi một request thử tới URL nên endpoint phải đang chạy.
+ */
+export async function registerWebhook(url: string, creds: PayosCredentials): Promise<RegisteredWebhook> {
+  try {
+    const res = await clientFor(creds).webhooks.confirm(url)
+    return {
+      webhookUrl: res.webhookUrl,
+      accountName: res.accountName,
+      accountNumber: res.accountNumber,
+      bankName: res.shortName || res.name,
+    }
+  } catch (err) {
+    console.error('Đăng ký webhook PayOS thất bại:', err)
+    throw new PaymentGatewayError(
+      'PayOS không chấp nhận khóa hoặc không gọi được webhook. Kiểm tra lại 3 khóa và đảm bảo web đang chạy công khai.',
+      { cause: err }
+    )
   }
 }

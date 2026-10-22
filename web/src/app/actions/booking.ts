@@ -8,6 +8,8 @@ import { settlePayment } from '@/lib/payments'
 import { computePrice } from '@/lib/pricing'
 import { getVnParts } from '@/lib/datetime'
 import { resolveAppUrl } from '@/lib/app-url'
+import { resolveClubChannel } from '@/lib/payment-channel'
+import { bookableCourtIds, courtLimit, isBillingEnforced } from '@/lib/billing'
 
 import { isMatchSkill } from '@/lib/constants'
 export interface MatchConfig {
@@ -84,7 +86,7 @@ export async function createBooking(
     .from('courts')
     .select(`
       id, name, sport_type, base_price_per_hour, deposit_percentage, is_active,
-      club:clubs ( id, name, open_time, close_time, is_active ),
+      club:clubs ( id, name, open_time, close_time, is_active, plan, plan_until ),
       court_pricing_rules (*)
     `)
     .eq('id', courtId)
@@ -98,9 +100,33 @@ export async function createBooking(
   }
 
   // ---- 3. Phải nằm trong giờ mở cửa (theo giờ Việt Nam) ----
-  const club = court.club as unknown as { open_time: string; close_time: string; is_active: boolean } | null
-  if (club && !club.is_active) {
+  const club = court.club as unknown as {
+    id: string
+    open_time: string
+    close_time: string
+    is_active: boolean
+    plan: string
+    plan_until: string | null
+  } | null
+  if (!club) {
+    return { error: 'Không tìm thấy cụm sân của sân này' }
+  }
+  if (!club.is_active) {
     return { error: 'Cụm sân này đang tạm ngưng nhận đặt' }
+  }
+
+  // ---- 2b. Giới hạn theo gói thuê bao (chỉ áp dụng từ ngày BILLING_ENFORCED_FROM) ----
+  const limit = courtLimit({
+    plan: club.plan,
+    planUntil: club.plan_until,
+    now: new Date(now),
+    enforced: isBillingEnforced(new Date(now)),
+  })
+  if (Number.isFinite(limit)) {
+    const { data: siblings } = await supabase.from('courts').select('id, created_at, is_active').eq('club_id', club.id)
+    if (!bookableCourtIds(siblings ?? [], limit).has(courtId)) {
+      return { error: 'Sân này tạm thời không nhận đặt do cụm sân chưa gia hạn gói. Vui lòng chọn sân khác.' }
+    }
   }
   const startVn = getVnParts(startDate)
   const endVn = getVnParts(endDate)
@@ -126,6 +152,19 @@ export async function createBooking(
 
   // ---- 5. Dọn các đơn quá hạn rồi giữ chỗ ----
   const admin = createAdminClient()
+
+  // Kênh nhận cọc: PayOS riêng của cụm sân → kênh nền tảng (giai đoạn chạy thử) → giả lập (chỉ dev)
+  let channel
+  try {
+    channel = await resolveClubChannel(admin, club.id)
+  } catch (err) {
+    console.error('createBooking: không đọc được cấu hình thanh toán của cụm sân', err)
+    return { error: 'Cấu hình thanh toán của cụm sân đang gặp sự cố. Vui lòng thử lại sau hoặc liên hệ chủ sân.' }
+  }
+  if (!channel) {
+    return { error: 'Cụm sân này chưa kết nối thanh toán online nên chưa nhận đặt sân. Vui lòng liên hệ chủ sân.' }
+  }
+
   await admin.rpc('expire_pending_bookings')
 
   const { count: pendingCount } = await admin
@@ -215,14 +254,17 @@ export async function createBooking(
   const appUrl = resolveAppUrl()
   let paymentLink
   try {
-    paymentLink = await createPaymentLink({
-      orderCode: Number(orderCode),
-      amount: depositAmount,
-      description: `SPORT ${orderCode}`,
-      returnUrl: `${appUrl}/bookings/${booking.id}`,
-      cancelUrl: `${appUrl}/bookings/${booking.id}`,
-      expiredAt: Math.floor(expiresAt.getTime() / 1000),
-    })
+    paymentLink = await createPaymentLink(
+      {
+        orderCode: Number(orderCode),
+        amount: depositAmount,
+        description: `SPORT ${orderCode}`,
+        returnUrl: `${appUrl}/bookings/${booking.id}`,
+        cancelUrl: `${appUrl}/bookings/${booking.id}`,
+        expiredAt: Math.floor(expiresAt.getTime() / 1000),
+      },
+      channel.kind === 'simulation' ? null : channel.creds
+    )
   } catch (err) {
     await rollback()
     return {
@@ -247,6 +289,9 @@ export async function createBooking(
       description: paymentLink.description,
       payment_link_id: paymentLink.paymentLinkId,
       simulated: paymentLink.simulated,
+      // Webhook dùng 2 trường này để biết kiểm tra chữ ký bằng khóa của kênh nào; sổ đối soát dùng để biết ai giữ tiền
+      channel: channel.kind,
+      club_id: club.id,
     },
   })
 
@@ -307,7 +352,7 @@ export async function simulateDepositPayment(bookingId: string) {
   const admin = createAdminClient()
   const { data: payment } = await admin
     .from('payments')
-    .select('order_code, user_id')
+    .select('order_code, user_id, metadata')
     .eq('booking_id', bookingId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -315,6 +360,10 @@ export async function simulateDepositPayment(bookingId: string) {
 
   if (!payment || payment.user_id !== user.id) {
     return { error: 'Không tìm thấy giao dịch của bạn' }
+  }
+  // Chỉ giả lập cho giao dịch được tạo ở chế độ giả lập, không bao giờ cho giao dịch PayOS thật
+  if ((payment.metadata as { simulated?: boolean } | null)?.simulated !== true) {
+    return { error: 'Giao dịch này là giao dịch thật, không thể giả lập' }
   }
 
   const result = await settlePayment({ orderCode: Number(payment.order_code), reference: `SIM_${Date.now()}` })

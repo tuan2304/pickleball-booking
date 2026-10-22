@@ -14,16 +14,23 @@ export interface FakeDb {
   tables: Record<string, Row[]>
   /** Ép một thao tác UPDATE trên bảng ghi lỗi (để test nhánh lỗi), vd { bookings: { code: '23P01', message: '...' } } */
   failUpdate: Record<string, DbError | undefined>
+  /** Hàm RPC giả: tên → (tham số) => kết quả */
+  rpc: Record<string, (args: Record<string, unknown>) => { data: unknown; error: DbError | null }>
   /** Nhật ký các lệnh đã chạy, để kiểm tra */
   log: string[]
 }
 
 export function createFakeDb(tables: Record<string, Row[]>): FakeDb {
-  return { tables, failUpdate: {}, log: [] }
+  return { tables, failUpdate: {}, rpc: {}, log: [] }
 }
 
 export function createFakeClient(db: FakeDb) {
   return {
+    async rpc(name: string, args: Record<string, unknown> = {}) {
+      const handler = db.rpc[name]
+      db.log.push(`rpc ${name}`)
+      return handler ? handler(args) : { data: null, error: { message: `rpc ${name} chưa được giả lập` } }
+    },
     from(table: string) {
       const filters: Array<(r: Row) => boolean> = []
       let mode: 'select' | 'update' | 'insert' = 'select'

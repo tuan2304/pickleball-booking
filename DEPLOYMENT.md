@@ -152,6 +152,45 @@ PayOS không có chế độ sandbox, nên thử bằng số tiền nhỏ (tối
 | Sau khi trả tiền bị đưa về `localhost` | `NEXT_PUBLIC_APP_URL` chưa đặt đúng trên Vercel |
 | Trang báo "đã nhận cọc nhưng khung giờ không còn" | Khách trả sau khi đơn đã hết hạn 15 phút và sân đã có người khác đặt; cần hoàn tiền thủ công (`payments.metadata.needs_refund = true`) |
 
+## 🏦 Giai đoạn 11–12: mỗi chủ sân dùng PayOS riêng + thuê bao
+
+Có **hai cách nhận tiền cọc**, hệ thống tự chọn theo từng cụm sân:
+
+| Tình huống | Tiền cọc về đâu | Ghi chú |
+| :-- | :-- | :-- |
+| Chủ sân vào **Nhận thanh toán** và kết nối PayOS riêng | **Thẳng vào ngân hàng của chủ sân** | Hướng đích. Webhook tự đăng ký, khóa được mã hóa trong DB |
+| Chưa kết nối (giai đoạn chạy thử) | Kênh PayOS của nền tảng (3 biến `PAYOS_*` trên Vercel) | Bạn chuyển lại cho chủ sân và ghi nhận ở `/admin` |
+| Không có khóa nào (chỉ khi dev) | Giả lập | Production không bao giờ rơi vào đây, sẽ báo lỗi |
+
+### Thứ tự triển khai (quan trọng)
+1. **Áp migration trước:** `supabase db push` (file `20261022000000_phase11_12_per_club_payos.sql`). Code mới đọc các bảng này nên phải có trước khi deploy.
+2. **Thêm biến môi trường trên Vercel** (Production), rồi Redeploy:
+
+| Biến | Bắt buộc | Ý nghĩa |
+| :-- | :-- | :-- |
+| `PAYMENT_SETTINGS_ENCRYPTION_KEY` | **Có** | Khóa mã hóa khóa PayOS của chủ sân. Tạo: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. **Đừng đổi** sau khi chủ sân đã lưu khóa |
+| `BILLING_ENFORCED_FROM` | Không | Ngày bắt đầu giới hạn gói Free, vd `2027-01-01T00:00:00+07:00`. **Để trống = miễn phí hoàn toàn** |
+| `PRO_PLAN_PRICE_VND` | Không | Giá gói Pro mỗi tháng. Mặc định 199000 chỉ là giá tạm, hãy tự đặt |
+| `PAYOS_*` (3 biến) | Có, nếu còn dùng kênh nền tảng | Cũng dùng để nhận tiền thuê bao |
+
+3. **Tạo tài khoản quản trị** (vai trò `admin` không tự đăng ký được). Chạy trong Supabase → SQL Editor, thay email của bạn:
+```sql
+update public.profiles set role = 'admin'
+where id = (select id from auth.users where email = 'EMAIL_CUA_BAN');
+```
+   Sau đó vào `https://<tên-miền>/admin` để ghi nhận chi trả cho chủ sân và cấp gói thủ công.
+4. **Tài khoản mẫu:** `cd web && node --env-file=.env.local scripts/secure-seed-accounts.mjs` (xem trước), thêm `--apply` để đổi mật khẩu ngẫu nhiên. Đã chạy `--apply` trên database hiện tại ngày 22/10/2026.
+
+### Chạy thử với vài chủ sân quen (chưa kết nối PayOS riêng)
+- Điền 3 khóa PayOS của nền tảng, đăng ký webhook như phần "Cài đặt PayOS" bên trên.
+- Mỗi khoản cọc do nền tảng giữ hộ hiện ở `/admin` mục **Tiền cọc nền tảng đang thu hộ**. Bạn chuyển khoản cho chủ sân rồi bấm **Ghi nhận đã chuyển**; chủ sân thấy số dư ở **Nhận thanh toán**.
+- Khoản "đã nhận nhưng mất sân" (`needs_refund`) và khoản giả lập **không** được tính cho chủ sân.
+
+### Thuê bao
+- Chưa đặt `BILLING_ENFORCED_FROM` thì **không có giới hạn nào**; chủ sân vẫn thấy trang **Gói dịch vụ** và có thể mua Pro thử.
+- Từ ngày bắt đầu: gói Free tối đa 2 sân con đang hoạt động; sân thứ 3 trở đi không nhận đặt cho đến khi nâng Pro. Sân không bị xóa.
+- Chủ sân trả thuê bao qua QR của **kênh PayOS nền tảng**; webhook tự gia hạn. Có thể cấp thủ công ở `/admin`.
+
 ## 🔒 Kiểm tra & Bảo mật sau khi Triển khai:
 1. **Webhook:** gửi thử `POST /api/payos/webhook` với body `{"orderCode": 1}` → phải nhận **401** (webhook chỉ chấp nhận payload có chữ ký PayOS hợp lệ).
 2. **Thanh toán thật:** đặt một khung giờ, quét QR chuyển khoản số tiền nhỏ → trang tự chuyển "Thành công" và chủ sân nhận chuông thông báo. Trên production **không có** nút giả lập thanh toán.

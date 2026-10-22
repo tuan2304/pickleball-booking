@@ -8,6 +8,8 @@ import {
   Building2,
   CalendarDays,
   Tags,
+  Wallet,
+  Crown,
   LogOut,
   Trophy,
   ShieldCheck,
@@ -36,6 +38,16 @@ const NAV_ITEMS = [
     label: 'Bảng giá linh hoạt',
     href: '/owner/pricing',
     icon: Tags,
+  },
+  {
+    label: 'Nhận thanh toán',
+    href: '/owner/payments',
+    icon: Wallet,
+  },
+  {
+    label: 'Gói dịch vụ',
+    href: '/owner/billing',
+    icon: Crown,
   },
 ]
 

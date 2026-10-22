@@ -18,6 +18,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 
+import { bankNameFromBin } from '@/lib/banks'
 import { formatVnd, formatTime, formatDate } from '@/lib/format'
 export interface BookingPaymentViewProps {
   booking: {
@@ -56,19 +57,6 @@ export interface BookingPaymentViewProps {
     name: string
     address: string
   }
-}
-
-const BANK_NAMES: Record<string, string> = {
-  '970422': 'MB Bank',
-  '970436': 'Vietcombank',
-  '970415': 'VietinBank',
-  '970418': 'BIDV',
-  '970405': 'Agribank',
-  '970407': 'Techcombank',
-  '970423': 'TPBank',
-  '970432': 'VPBank',
-  '970416': 'ACB',
-  '970403': 'Sacombank',
 }
 
 export function BookingPaymentView({
@@ -163,7 +151,7 @@ export function BookingPaymentView({
   const bank = payment?.metadata
   const transferContent = bank?.description || (payment ? `SPORT ${payment.order_code}` : '')
   const qrUrl = payment?.qr_code_url || null
-  const bankName = bank?.bin ? BANK_NAMES[bank.bin] || `Ngân hàng (BIN ${bank.bin})` : null
+  const bankName = bankNameFromBin(bank?.bin)
 
   function copyText(text: string, type: string) {
     navigator.clipboard.writeText(text)

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyUser } from '@/lib/notify'
+import { checkCourtAllowance } from '@/lib/club-limits'
 
 export async function createClub(formData: FormData) {
   const supabase = await createClient()
@@ -11,6 +12,11 @@ export async function createClub(formData: FormData) {
 
   if (!user) {
     return { error: 'Bạn cần đăng nhập để thực hiện tác vụ này' }
+  }
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  if (profile?.role !== 'owner' && profile?.role !== 'admin') {
+    return { error: 'Chỉ tài khoản chủ sân mới tạo được cụm sân' }
   }
 
   const name = formData.get('name') as string
@@ -69,6 +75,11 @@ export async function createCourt(formData: FormData) {
 
   if (!clubId || !name || !sportType) {
     return { error: 'Vui lòng điền đủ thông tin sân con' }
+  }
+
+  const allowance = await checkCourtAllowance(supabase, clubId)
+  if (!allowance.allowed) {
+    return { error: allowance.message }
   }
 
   const { data, error } = await supabase.from('courts').insert({
@@ -180,6 +191,13 @@ export async function updateBookingStatus(bookingId: string, status: 'confirmed'
 
 export async function toggleCourtStatus(courtId: string, isActive: boolean) {
   const supabase = await createClient()
+
+  if (isActive) {
+    const { data: court } = await supabase.from('courts').select('club_id').eq('id', courtId).maybeSingle()
+    if (!court) return { error: 'Không tìm thấy sân con' }
+    const allowance = await checkCourtAllowance(supabase, court.club_id, { excludeCourtId: courtId })
+    if (!allowance.allowed) return { error: allowance.message }
+  }
   const { error } = await supabase
     .from('courts')
     .update({ is_active: isActive })

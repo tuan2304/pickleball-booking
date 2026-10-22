@@ -66,7 +66,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
             expires_at: booking.expires_at,
           }}
           payment={paymentData}
-          simulationEnabled={isPaymentSimulationEnabled()}
+          simulationEnabled={isPaymentSimulationEnabled() && (paymentData as { metadata?: { simulated?: boolean } } | null)?.metadata?.simulated === true}
           // eslint-disable-next-line react-hooks/purity -- server component, chạy một lần mỗi request
           serverNow={Date.now()}
           court={courtData}

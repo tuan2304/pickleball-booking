@@ -22,6 +22,10 @@ export default async function OwnerLayout({
     .eq('id', user.id)
     .single()
 
+  if (profile?.role !== 'owner' && profile?.role !== 'admin') {
+    redirect('/')
+  }
+
   return (
     <div className="min-h-screen flex bg-background text-foreground">
       <OwnerSidebar

@@ -7,6 +7,8 @@ import { ClubReviewsSection } from '@/components/clubs/club-reviews-section'
 import { getClubReviews } from '@/app/actions/reviews'
 import { Badge } from '@/components/ui/badge'
 import { RemoteImage } from '@/components/ui/remote-image'
+import { canAcceptBookings } from '@/lib/payment-channel'
+import { bookableCourtIds, courtLimit, isBillingEnforced } from '@/lib/billing'
 import { MapPin, Clock, ArrowLeft, Sparkles } from 'lucide-react'
 
 interface ClubDetailPageProps {
@@ -27,6 +29,7 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
       .from('courts')
       .select(`
         id,
+        created_at,
         name,
         sport_type,
         surface_type,
@@ -62,7 +65,15 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
     })),
   }))
 
-  const courtIds = courtList.map((c) => c.id)
+  // Sân vượt giới hạn gói Free (chỉ khi đã bắt đầu thu phí) tạm không nhận đặt
+   
+  const now = new Date()
+  const limit = courtLimit({ plan: club.plan, planUntil: club.plan_until, now, enforced: isBillingEnforced(now) })
+  const allowedIds = bookableCourtIds(courts ?? [], limit)
+  const bookableCourts = courtList.filter((c) => allowedIds.has(c.id))
+  const acceptsPayments = canAcceptBookings(club.accepts_online_payment)
+
+  const courtIds = bookableCourts.map((c) => c.id)
 
   // 3. Lấy bookings của các sân con này
   let existingBookings: Array<{
@@ -172,12 +183,18 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
             </p>
           </div>
 
-          <TimeSlotPicker
-            courts={courtList}
-            existingBookings={existingBookings}
-            clubOpenTime={club.open_time || '06:00:00'}
-            clubCloseTime={club.close_time || '23:00:00'}
-          />
+          {acceptsPayments ? (
+            <TimeSlotPicker
+              courts={bookableCourts}
+              existingBookings={existingBookings}
+              clubOpenTime={club.open_time || '06:00:00'}
+              clubCloseTime={club.close_time || '23:00:00'}
+            />
+          ) : (
+            <div role="status" className="p-8 text-center border border-dashed rounded-xl text-sm text-muted-foreground">
+              Cụm sân này chưa kết nối thanh toán online nên chưa nhận đặt sân trên SportArena. Vui lòng quay lại sau hoặc liên hệ trực tiếp với chủ sân.
+            </div>
+          )}
         </div>
 
         {/* Club Reviews & Ratings Section */}

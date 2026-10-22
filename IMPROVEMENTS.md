@@ -40,6 +40,10 @@
 | P2-10..12 SEO, error.tsx, tối ưu Realtime | ⏳ Chưa làm | |
 | Hiệu năng Vercel | ✅ Đã làm | Vùng `sin1`, cache auth theo request, song song hóa truy vấn |
 | CI | ✅ Đã làm | `.github/workflows/ci.yml`: typecheck, lint, test, build, DB test, mobile typecheck |
+| Mỗi chủ sân dùng PayOS riêng (GĐ 11) | ✅ Code xong | Chờ `supabase db push` + biến `PAYMENT_SETTINGS_ENCRYPTION_KEY` |
+| Thuê bao Free/Pro (GĐ 12) | ✅ Code xong | Đang miễn phí đến khi đặt `BILLING_ENFORCED_FROM`; giá `PRO_PLAN_PRICE_VND` cần bạn quyết định |
+| Sổ đối soát khi nền tảng thu hộ | ✅ Code xong | `/admin`; không tự chuyển tiền thật, bạn chuyển rồi ghi nhận |
+| Chính sách hủy/hoàn cọc | ⏳ Chưa làm | Cần bạn quyết định (hủy trước bao lâu, hoàn bao nhiêu %) |
 | P3 (hồ sơ người dùng, hoàn tiền, ảnh sân, mobile đặt sân...) | ⏳ Chưa làm | Cần xác nhận nghiệp vụ trước |
 
 **Quyết định nghiệp vụ đã chọn (có thể đổi):** mỗi người giữ tối đa 3 đơn chưa cọc; đặt tối đa 6 giờ/đơn và trước tối đa 60 ngày; được đánh giá khi đơn đã `completed` hoặc đã `confirmed` và qua giờ kết thúc; giá tính theo khung giờ của thời điểm **bắt đầu** (như cũ); tiền về sau khi đơn hết hạn thì cố giữ lại sân, nếu sân đã bị người khác đặt thì đánh dấu `needs_refund` và báo người dùng.

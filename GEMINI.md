@@ -22,7 +22,9 @@
 - [x] **Giai đoạn 7: Phát triển Mobile App (React Native / Expo)** (Hoàn thành)
 - [x] **Giai đoạn 8: Triển khai Production (Deploy Web)** (Hoàn thành)
 - [x] **Giai đoạn 9: Nâng cấp Live Chat & Đánh giá/Review** (Hoàn thành)
-- [x] **Giai đoạn 10: Hardening - Bảo mật RLS, thanh toán PayOS thật, hết hạn giữ chỗ** (Code hoàn thành, chờ `supabase db push` + deploy)
+- [x] **Giai đoạn 10: Hardening - Bảo mật RLS, thanh toán PayOS thật, hết hạn giữ chỗ** (Hoàn thành, đã áp lên production)
+- [ ] **Giai đoạn 11: Mỗi chủ sân dùng PayOS riêng + sổ đối soát chi trả** (Code xong trên nhánh `phase-11-12-per-club-payos`, chờ `supabase db push` + deploy)
+- [ ] **Giai đoạn 12: Thuê bao gói Free/Pro theo cụm sân** (Code xong cùng nhánh, đang miễn phí cho tới khi đặt `BILLING_ENFORCED_FROM`)
 
 ## 📝 Nhật ký hoạt động (Activity Log)
 - **2024-05-20:** Khởi tạo file `GEMINI.md` và thiết lập quy trình làm việc.
@@ -194,3 +196,9 @@
     - Sửa lỗi phát hiện trong lúc dọn: (1) `bookings.matches` là quan hệ 1-1 nên API trả object, code cũ đọc như mảng nên luôn coi đơn chưa có kèo; (2) nút 'Hôm nay' và bảng giờ lấy ngày theo UTC (sai trước 7h sáng giờ VN); (3) đơn kết thúc 19:30 không làm kín ô 19:00; (4) giờ trên các trang server lệch 7 tiếng vì dùng múi giờ máy chủ.
     - UI/UX theo bộ hướng dẫn ui-ux-pro-max (xem [DESIGN.md](DESIGN.md)): sửa tương phản nút/chữ (trắng trên emerald-600 chỉ 3,77:1, trên amber-500 chỉ 2,15:1), chữ tối thiểu 12px, thay emoji bằng icon SVG, aria-label/role=alert/aria-busy, vùng chạm lớn hơn trên màn hình cảm ứng.
     - Test: 48 test đơn vị (vitest: múi giờ, giá, lịch, định dạng, `settlePayment` với DB giả lập, webhook) + 39 ca kiểm thử bảo mật DB (`npm run db:test`, cần Docker). CI GitHub Actions ở `.github/workflows/ci.yml`.
+- **2026-10-22 (Giai đoạn 11-12):**
+    - Migration [20261022000000_phase11_12_per_club_payos.sql](supabase/migrations/20261022000000_phase11_12_per_club_payos.sql): bảng `club_payment_settings` (khóa PayOS mã hóa, chỉ service_role truy cập), `subscription_payments`, `payouts`; cột `clubs.accepts_online_payment/plan/plan_until` kèm quyền ghi theo cột (chủ sân không tự nâng gói); hàm `apply_subscription_payment` (nguyên tử, idempotent) và `club_balances`.
+    - Mỗi cụm sân chọn kênh PayOS: riêng → kênh nền tảng → giả lập (dev) qua `lib/payment-channel.ts`. Webhook ([lib/payos-webhook.ts](web/src/lib/payos-webhook.ts)) tra đơn ra kênh trước, rồi kiểm tra chữ ký bằng đúng khóa của kênh; hỗ trợ cả thanh toán thuê bao.
+    - Giao diện: `/owner/payments` (kết nối PayOS, tự đăng ký webhook, xem số dư nền tảng giữ hộ), `/owner/billing` (mua/gia hạn Pro bằng QR), `/admin` (ghi nhận chi trả, cấp gói). Khóa mã hóa AES-256-GCM (`lib/crypto.ts`).
+    - Sửa lỗ hổng: layout `/owner` trước đây không kiểm tra vai trò nên người chơi vào được và tạo cụm sân; nay chỉ owner/admin.
+    - Kiểm thử: 93 test đơn vị, 66 ca kiểm thử bảo mật DB. Đã đổi mật khẩu ngẫu nhiên 3 tài khoản mẫu trên production (`scripts/secure-seed-accounts.mjs`).

@@ -99,6 +99,64 @@ SELECT t('b0000000-0000-0000-0000-00000000000b','authenticated',$$SELECT public.
 SELECT t(NULL,'service_role',$$SELECT public.next_payos_order_code()::text$$,'10000000','service_role lấy được orderCode');
 SELECT t(NULL,'anon',$$SELECT count(*)::text FROM public.get_busy_slots(ARRAY['22222222-2222-2222-2222-222222222222']::uuid[])$$,'2','khách xem được lịch bận (chỉ khung giờ còn hiệu lực)');
 
+-- ---------------------------------------------------------------- 9. Giai đoạn 11-12: PayOS riêng, thuê bao, đối soát
+INSERT INTO auth.users(id, raw_user_meta_data) VALUES ('f0000000-0000-0000-0000-00000000000f', '{"full_name":"Owner 2","role":"owner"}');
+
+-- 9a. Khóa PayOS: không ai ngoài service_role đọc/ghi được
+INSERT INTO club_payment_settings(club_id, payos_client_id, payos_api_key_enc, payos_checksum_key_enc, verified_at)
+  VALUES ('11111111-1111-1111-1111-111111111111', 'cid', 'v1.x.y.z', 'v1.x.y.z', now());
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT count(*)::text FROM club_payment_settings$$,'ERR','chính chủ sân cũng không đọc được bảng khóa PayOS');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$INSERT INTO club_payment_settings(club_id,payos_client_id,payos_api_key_enc,payos_checksum_key_enc) VALUES ('11111111-1111-1111-1111-111111111111','x','y','z') RETURNING 'x'$$,'ERR','chủ sân không tự ghi bảng khóa PayOS');
+SELECT t(NULL,'anon',$$SELECT count(*)::text FROM club_payment_settings$$,'ERR','khách không đọc được bảng khóa PayOS');
+SELECT t(NULL,'service_role',$$SELECT count(*)::text FROM club_payment_settings$$,'1','server (service_role) đọc được bảng khóa PayOS');
+
+-- 9b. Chủ sân không tự nâng gói hay tự bật cờ nhận thanh toán
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$UPDATE clubs SET plan='pro' WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 'x'$$,'ERR','chủ sân tự nâng lên gói pro bị chặn');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$UPDATE clubs SET plan_until=now()+interval '5 year' WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 'x'$$,'ERR','chủ sân tự kéo dài hạn gói bị chặn');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$UPDATE clubs SET accepts_online_payment=true WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 'x'$$,'ERR','chủ sân tự bật cờ nhận thanh toán bị chặn');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$WITH x AS (UPDATE clubs SET name='CLB moi' WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 1) SELECT count(*)::text FROM x$$,'1','chủ sân vẫn sửa được thông tin cụm sân');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$INSERT INTO clubs(owner_id,name,address,plan) VALUES ('f0000000-0000-0000-0000-00000000000f','Lau','x','pro') RETURNING 'x'$$,'ERR','tạo cụm sân kèm plan=pro bị chặn');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$WITH x AS (INSERT INTO clubs(owner_id,name,address) VALUES ('f0000000-0000-0000-0000-00000000000f','Hop le','x') RETURNING 1) SELECT count(*)::text FROM x$$,'1','tạo cụm sân bình thường vẫn được');
+SELECT t(NULL,'postgres',$$SELECT plan||'/'||accepts_online_payment::text FROM clubs WHERE name='Hop le'$$,'free/false','cụm sân mới mặc định gói free, chưa nhận thanh toán');
+
+-- 9c. Thuê bao: áp một lần, cộng dồn hạn, chủ sân chỉ xem được của mình
+INSERT INTO subscription_payments(id, club_id, user_id, order_code, amount, months) VALUES
+ ('a1000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111','a0000000-0000-0000-0000-00000000000a',5001,199000,1),
+ ('a1000000-0000-0000-0000-000000000002','11111111-1111-1111-1111-111111111111','a0000000-0000-0000-0000-00000000000a',5002,597000,3);
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT count(*)::text FROM subscription_payments$$,'2','chủ sân xem được giao dịch thuê bao của mình');
+SELECT t('e0000000-0000-0000-0000-00000000000e','authenticated',$$SELECT count(*)::text FROM subscription_payments$$,'0','người khác không xem được giao dịch thuê bao');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$UPDATE subscription_payments SET status='paid' WHERE id='a1000000-0000-0000-0000-000000000001' RETURNING 'x'$$,'ERR','chủ sân tự đánh dấu đã trả thuê bao bị chặn');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$INSERT INTO subscription_payments(club_id,user_id,order_code,amount,months,status) VALUES ('11111111-1111-1111-1111-111111111111','a0000000-0000-0000-0000-00000000000a',9,0,1,'paid') RETURNING 'x'$$,'ERR','chủ sân tự chèn giao dịch thuê bao đã trả bị chặn');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT count(*)::text FROM apply_subscription_payment('a1000000-0000-0000-0000-000000000001'::uuid)$$,'ERR','chủ sân không gọi được hàm áp thuê bao');
+SELECT t(NULL,'service_role',$$SELECT count(*)::text FROM apply_subscription_payment('a1000000-0000-0000-0000-000000000001'::uuid,'ref1')$$,'1','áp thuê bao lần đầu thành công');
+SELECT t(NULL,'postgres',$$SELECT (plan='pro' AND plan_until > now()+interval '29 days' AND plan_until < now()+interval '31 days')::text FROM clubs WHERE id='11111111-1111-1111-1111-111111111111'$$,'true','gói pro, hạn khoảng 30 ngày');
+SELECT t(NULL,'service_role',$$SELECT count(*)::text FROM apply_subscription_payment('a1000000-0000-0000-0000-000000000001'::uuid,'ref1')$$,'0','webhook gọi lặp không cộng hạn lần nữa');
+SELECT t(NULL,'service_role',$$SELECT count(*)::text FROM apply_subscription_payment('a1000000-0000-0000-0000-000000000002'::uuid,'ref2')$$,'1','áp tiếp gói 3 tháng');
+SELECT t(NULL,'postgres',$$SELECT (plan_until > now()+interval '119 days' AND plan_until < now()+interval '121 days')::text FROM clubs WHERE id='11111111-1111-1111-1111-111111111111'$$,'true','hạn được cộng dồn (30 + 90 ngày)');
+
+-- 9d. Sổ đối soát: chỉ tính cọc thật qua kênh nền tảng
+INSERT INTO bookings(id,court_id,user_id,start_time,end_time,total_price,deposit_amount,status) VALUES
+ ('b1000000-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222','c0000000-0000-0000-0000-00000000000c',now()+interval '20 day',now()+interval '20 day 1 hour',1,1,'confirmed'),
+ ('b1000000-0000-0000-0000-000000000002','22222222-2222-2222-2222-222222222222','c0000000-0000-0000-0000-00000000000c',now()+interval '21 day',now()+interval '21 day 1 hour',1,1,'confirmed'),
+ ('b1000000-0000-0000-0000-000000000003','22222222-2222-2222-2222-222222222222','c0000000-0000-0000-0000-00000000000c',now()+interval '22 day',now()+interval '22 day 1 hour',1,1,'confirmed'),
+ ('b1000000-0000-0000-0000-000000000004','22222222-2222-2222-2222-222222222222','c0000000-0000-0000-0000-00000000000c',now()+interval '23 day',now()+interval '23 day 1 hour',1,1,'confirmed'),
+ ('b1000000-0000-0000-0000-000000000005','22222222-2222-2222-2222-222222222222','c0000000-0000-0000-0000-00000000000c',now()+interval '24 day',now()+interval '24 day 1 hour',1,1,'confirmed'),
+ ('b1000000-0000-0000-0000-000000000006','22222222-2222-2222-2222-222222222222','c0000000-0000-0000-0000-00000000000c',now()+interval '25 day',now()+interval '25 day 1 hour',1,1,'confirmed');
+INSERT INTO payments(booking_id,user_id,order_code,amount,status,metadata) VALUES
+ ('b1000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-00000000000c',1001,100000,'paid','{"channel":"platform"}'),
+ ('b1000000-0000-0000-0000-000000000002','c0000000-0000-0000-0000-00000000000c',1002,50000,'paid','{"channel":"club"}'),
+ ('b1000000-0000-0000-0000-000000000003','c0000000-0000-0000-0000-00000000000c',1003,30000,'paid','{"channel":"platform","simulated":true}'),
+ ('b1000000-0000-0000-0000-000000000004','c0000000-0000-0000-0000-00000000000c',1004,20000,'paid','{"channel":"platform","needs_refund":true}'),
+ ('b1000000-0000-0000-0000-000000000005','c0000000-0000-0000-0000-00000000000c',1005,10000,'pending','{"channel":"platform"}'),
+ ('b1000000-0000-0000-0000-000000000006','c0000000-0000-0000-0000-00000000000c',1006,5000,'paid','{}');
+INSERT INTO payouts(club_id, amount, note) VALUES ('11111111-1111-1111-1111-111111111111', 40000, 'dot 1');
+SELECT t(NULL,'service_role',$$SELECT collected||'/'||paid_out||'/'||owed FROM club_balances(ARRAY['11111111-1111-1111-1111-111111111111']::uuid[])$$,'105000/40000/65000','thu hộ 100k + 5k (bỏ kênh riêng, giả lập, mất sân, chưa trả) − đã chi 40k = còn nợ 65k');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT * FROM club_balances()$$,'ERR','chủ sân không gọi được hàm đối soát (chỉ server)');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT count(*)::text FROM payouts$$,'1','chủ sân xem được khoản chi cho cụm sân của mình');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$SELECT count(*)::text FROM payouts$$,'0','chủ sân khác không thấy khoản chi của cụm sân này');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$INSERT INTO payouts(club_id,amount) VALUES ('11111111-1111-1111-1111-111111111111',1) RETURNING 'x'$$,'ERR','chủ sân không tự ghi khoản chi');
+SELECT t(NULL,'postgres',$$INSERT INTO payouts(club_id,amount) VALUES ('11111111-1111-1111-1111-111111111111',0) RETURNING 'x'$$,'ERR','khoản chi phải lớn hơn 0');
+
 -- ---------------------------------------------------------------- Tổng kết
 SELECT CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END AS ket_qua, label AS ca_kiem_thu, CASE WHEN ok THEN '' ELSE detail END AS chi_tiet FROM test_results ORDER BY ok, label;
 DO $$
