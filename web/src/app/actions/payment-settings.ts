@@ -20,6 +20,27 @@ export interface SavePaymentSettingsResult {
   account?: { accountName: string; accountNumber: string; bankName: string }
 }
 
+/** Thời gian một đơn chờ cọc còn hiệu lực (15 phút) cộng dư để tránh lệch giờ */
+const PENDING_WINDOW_MS = 20 * 60 * 1000
+
+/**
+ * Còn khách đang quét QR của kênh riêng này không. Webhook của các đơn đó phải kiểm chữ ký bằng khóa hiện tại,
+ * nên đổi hoặc xóa khóa lúc này sẽ làm khách đã chuyển tiền mà đơn không được xác nhận.
+ */
+async function hasPendingClubPayments(clubId: string): Promise<boolean> {
+  const admin = createAdminClient()
+  const { count } = await admin
+    .from('payments')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending')
+    .eq('metadata->>channel', 'club')
+    .eq('metadata->>club_id', clubId)
+    .gt('created_at', new Date(Date.now() - PENDING_WINDOW_MS).toISOString())
+  return (count ?? 0) > 0
+}
+
+const PENDING_MESSAGE = 'Đang có khách chờ thanh toán qua kênh này. Vui lòng thử lại sau khoảng 15 phút.'
+
 /** Che gần hết số tài khoản khi hiển thị lại */
 function maskAccount(n: string) {
   return n.length <= 4 ? n : `${'•'.repeat(n.length - 4)}${n.slice(-4)}`
@@ -64,6 +85,13 @@ export async function savePaymentSettings(clubId: string, input: SavePaymentSett
   }
 
   const admin = createAdminClient()
+
+  // Đổi sang bộ khóa khác (khác Client ID) khi còn đơn đang chờ thì chặn
+  const { data: existing } = await admin.from('club_payment_settings').select('payos_client_id').eq('club_id', clubId).maybeSingle()
+  if (existing && existing.payos_client_id !== clientId && (await hasPendingClubPayments(clubId))) {
+    return { error: PENDING_MESSAGE }
+  }
+
   const { error: saveErr } = await admin.from('club_payment_settings').upsert({
     club_id: clubId,
     payos_client_id: clientId,
@@ -89,6 +117,8 @@ export async function savePaymentSettings(clubId: string, input: SavePaymentSett
 export async function removePaymentSettings(clubId: string): Promise<{ error?: string; success?: boolean }> {
   const auth = await requireClubOwner(clubId)
   if ('error' in auth) return { error: auth.error }
+
+  if (await hasPendingClubPayments(clubId)) return { error: PENDING_MESSAGE }
 
   const admin = createAdminClient()
   const { error } = await admin.from('club_payment_settings').delete().eq('club_id', clubId)

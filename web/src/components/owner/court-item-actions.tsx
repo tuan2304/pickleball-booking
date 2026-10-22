@@ -15,15 +15,17 @@ export function CourtItemActions({ courtId, isActive }: CourtItemActionsProps) {
 
   async function handleToggle() {
     setLoading(true)
-    await toggleCourtStatus(courtId, !isActive)
+    const res = await toggleCourtStatus(courtId, !isActive)
     setLoading(false)
+    if (res?.error) alert(res.error)
   }
 
   async function handleDelete() {
-    if (confirm('Bạn có chắc chắn muốn xóa sân con này? Lịch đặt của sân cũng sẽ bị ảnh hưởng.')) {
+    if (confirm('Bạn có chắc chắn muốn xóa sân con này? Chỉ xóa được sân chưa có đơn đặt nào; nếu đã có, hãy chọn Tạm ngưng.')) {
       setLoading(true)
-      await deleteCourt(courtId)
+      const res = await deleteCourt(courtId)
       setLoading(false)
+      if (res?.error) alert(res.error)
     }
   }
 

@@ -22,7 +22,7 @@ function seed(overrides: { paymentStatus?: string; bookingStatus?: string; amoun
         user_id: 'player-1',
         amount: overrides.amount ?? 30000,
         status: overrides.paymentStatus ?? 'pending',
-        metadata: {},
+        metadata: { channel: 'club', club_id: 'club-1', bin: '970422' },
         booking: {
           id: 'bk-1',
           status: overrides.bookingStatus ?? 'pending',
@@ -107,7 +107,8 @@ describe('settlePayment', () => {
 
     expect(r).toMatchObject({ ok: true, needsRefund: true })
     expect(payment().status).toBe('paid')
-    expect(payment().metadata).toMatchObject({ needs_refund: true })
+    // Phải giữ nguyên channel/club_id/bin: webhook gọi lại vẫn cần chúng để chọn đúng khóa kiểm chữ ký
+    expect(payment().metadata).toMatchObject({ needs_refund: true, channel: 'club', club_id: 'club-1', bin: '970422' })
     expect(booking().status).toBe('cancelled')
     expect(notified()).toEqual(['player-1'])
   })

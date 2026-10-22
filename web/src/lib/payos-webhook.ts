@@ -19,7 +19,8 @@ export interface WebhookResponse {
 export async function handlePayosWebhook(body: unknown): Promise<WebhookResponse> {
   const orderCode = Number((body as { data?: { orderCode?: unknown } } | null)?.data?.orderCode)
   if (!Number.isSafeInteger(orderCode) || orderCode <= 0) {
-    return { status: 400, body: { error: 'Thiếu orderCode' } }
+    // Không có đơn nào để xử lý (vd. payload thử khi đăng ký URL): trả 200 để PayOS không coi webhook là hỏng
+    return { status: 200, body: { success: true, message: 'Bỏ qua: không có orderCode' } }
   }
 
   const admin = createAdminClient()

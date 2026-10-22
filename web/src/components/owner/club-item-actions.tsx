@@ -14,10 +14,11 @@ export function ClubItemActions({ clubId, clubName }: ClubItemActionsProps) {
   const [loading, setLoading] = useState(false)
 
   async function handleDelete() {
-    if (confirm(`Bạn có chắc chắn muốn xóa cụm sân "${clubName}"? Toàn bộ sân con và lịch đặt liên quan sẽ bị xóa.`)) {
+    if (confirm(`Bạn có chắc chắn muốn xóa cụm sân "${clubName}"? Chỉ xóa được cụm sân chưa có đơn đặt hay giao dịch nào.`)) {
       setLoading(true)
-      await deleteClub(clubId)
+      const res = await deleteClub(clubId)
       setLoading(false)
+      if (res?.error) alert(res.error)
     }
   }
 

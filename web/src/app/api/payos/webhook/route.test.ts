@@ -66,9 +66,12 @@ describe('POST /api/payos/webhook', () => {
     expect((await post('không phải json {{{')).status).toBe(400)
   })
 
-  it('thiếu orderCode → 400', async () => {
-    expect((await post({ data: {} })).status).toBe(400)
-    expect((await post({ data: { orderCode: -5 } })).status).toBe(400)
+  it('JSON hợp lệ nhưng không có orderCode → 200 bỏ qua (không làm hỏng việc đăng ký webhook), không đụng dữ liệu', async () => {
+    for (const body of [{ data: {} }, { data: { orderCode: -5 } }, {}, null]) {
+      expect((await post(body)).status).toBe(200)
+    }
+    expect(verifyPaymentWebhook).not.toHaveBeenCalled()
+    expect(settlePayment).not.toHaveBeenCalled()
   })
 
   it('đơn không tồn tại (payload thử khi đăng ký URL) → 200 và không động vào dữ liệu', async () => {

@@ -206,3 +206,9 @@
     - [lib/maps.ts](web/src/lib/maps.ts): đọc toạ độ từ link Google Maps / toạ độ thuần, dựng URL bản đồ nhúng, xem và chỉ đường. [lib/maps-resolve.ts](web/src/lib/maps-resolve.ts) mở rộng link rút gọn `maps.app.goo.gl` ở server, chỉ đi theo chuyển hướng tới host của Google (chống SSRF).
     - Chủ sân ghim vị trí lúc tạo cụm sân hoặc bằng nút 'Ghim vị trí' (dán link/toạ độ hoặc dùng vị trí hiện tại, có xem trước). Không cần đổi database: dùng sẵn cột `clubs.latitude/longitude`.
     - Khách thấy bản đồ nhúng ở trang chi tiết sân và nút 'Chỉ đường' ở danh sách sân, trang kèo, màn hình đặt sân thành công, app mobile. Chưa ghim vị trí thì tìm theo địa chỉ và ghi chú rõ.
+- **2026-10-22 (Review nhánh trước khi merge):**
+    - Sửa `settlePayment` ghi đè `payments.metadata` khi mất sân (mất `channel`/`club_id` nên webhook gọi lại kiểm chữ ký sai khóa): nay gộp metadata.
+    - Chặn ngắt kết nối/đổi khóa PayOS khi còn đơn đang chờ thanh toán qua kênh riêng (khách đã chuyển tiền sẽ không được xác nhận).
+    - Chặn xóa cụm sân/sân con đã có đơn hoặc giao dịch (xóa dây chuyền làm mất sổ sách tiền cọc, khoản chi, lịch sử thuê bao); nút Kích hoạt/Tạm ngưng và Xóa nay hiển thị lỗi thay vì nuốt.
+    - Webhook: JSON hợp lệ nhưng thiếu `orderCode` trả 200 (không làm hỏng việc đăng ký webhook).
+    - Đã kiểm tra: URL bản đồ nhúng không khóa của Google không bị chặn nhúng (trang cuối không có X-Frame-Options/frame-ancestors); audit toàn bộ Server Actions; quét bí mật trong diff: sạch.

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyUser } from '@/lib/notify'
 import { checkCourtAllowance } from '@/lib/club-limits'
+import { getClubDeletionBlocker, getCourtDeletionBlocker } from '@/lib/deletion-guards'
 import { requireClubOwner } from '@/lib/auth-guards'
 import { isValidLatLng } from '@/lib/maps'
 
@@ -231,6 +232,17 @@ export async function toggleCourtStatus(courtId: string, isActive: boolean) {
 
 export async function deleteCourt(courtId: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Bạn cần đăng nhập' }
+
+  // Sân con công khai ai cũng đọc được nên phải kiểm tra rõ ràng đây là chủ cụm sân
+  const { data: court } = await supabase.from('courts').select('id, club:clubs ( owner_id )').eq('id', courtId).maybeSingle()
+  const ownerId = (court?.club as unknown as { owner_id: string } | null)?.owner_id
+  if (!court || ownerId !== user.id) return { error: 'Bạn không có quyền xóa sân con này' }
+
+  const blocker = await getCourtDeletionBlocker(createAdminClient(), courtId)
+  if (blocker) return { error: blocker }
+
   const { error } = await supabase
     .from('courts')
     .delete()
@@ -247,6 +259,12 @@ export async function deleteCourt(courtId: string) {
 }
 
 export async function deleteClub(clubId: string) {
+  const auth = await requireClubOwner(clubId)
+  if ('error' in auth) return { error: auth.error }
+
+  const blocker = await getClubDeletionBlocker(createAdminClient(), clubId)
+  if (blocker) return { error: blocker }
+
   const supabase = await createClient()
   const { error } = await supabase
     .from('clubs')

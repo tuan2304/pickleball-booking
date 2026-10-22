@@ -25,7 +25,7 @@ export async function settlePayment({ orderCode, paidAmount, reference }: Settle
   const { data: payment, error: findErr } = await admin
     .from('payments')
     .select(`
-      id, booking_id, user_id, amount, status,
+      id, booking_id, user_id, amount, status, metadata,
       booking:bookings (
         id, status,
         court:courts ( name, club:clubs ( name, owner_id ) )
@@ -91,7 +91,14 @@ export async function settlePayment({ orderCode, paidAmount, reference }: Settle
       needsRefund = true
       await admin
         .from('payments')
-        .update({ metadata: { needs_refund: true, reason: 'slot_taken_after_expiry' } })
+        // Gộp vào metadata cũ: phải giữ channel/club_id để webhook gọi lại vẫn kiểm chữ ký bằng đúng khóa
+        .update({
+          metadata: {
+            ...((payment.metadata as Record<string, unknown> | null) ?? {}),
+            needs_refund: true,
+            reason: 'slot_taken_after_expiry',
+          },
+        })
         .eq('id', payment.id)
     } else {
       console.error('settlePayment: lỗi xác nhận booking', bookingErr)
