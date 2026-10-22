@@ -30,7 +30,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md shadow-xl border-emerald-500/20 bg-card/90 backdrop-blur-sm">
       <CardHeader className="space-y-2 text-center pb-6">
-        <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 shadow-inner">
+        <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shadow-inner">
           <Trophy className="w-6 h-6" />
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
@@ -67,7 +67,7 @@ export function LoginForm() {
               <Label htmlFor="password">Mật khẩu</Label>
               <Link
                 href="#"
-                className="text-xs text-emerald-600 hover:text-emerald-500 hover:underline"
+                className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-500 hover:underline"
               >
                 Quên mật khẩu?
               </Link>
@@ -87,7 +87,7 @@ export function LoginForm() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+            className="w-full h-10 bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
           >
             {loading ? (
               <>
@@ -106,7 +106,7 @@ export function LoginForm() {
             Chưa có tài khoản?{' '}
             <Link
               href="/register"
-              className="font-semibold text-emerald-600 hover:text-emerald-500 hover:underline"
+              className="font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-500 hover:underline"
             >
               Đăng ký ngay
             </Link>

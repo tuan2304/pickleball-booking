@@ -14,6 +14,7 @@ import {
   User,
 } from 'lucide-react'
 
+import { formatVnd, formatTime, formatDate } from '@/lib/format'
 export default async function OwnerDashboardPage() {
   const supabase = await getSupabase()
   const user = await getCurrentUser()
@@ -82,7 +83,7 @@ export default async function OwnerDashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link href="/owner/clubs">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 cursor-pointer">
+            <Button className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm shadow-emerald-600/20 cursor-pointer">
               <Plus className="w-4 h-4 mr-1.5" />
               Thêm Cụm Sân / Sân Con
             </Button>
@@ -97,7 +98,7 @@ export default async function OwnerDashboardPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Tổng Cụm Sân
             </CardTitle>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
               <Building2 className="w-4 h-4" />
             </div>
           </CardHeader>
@@ -114,7 +115,7 @@ export default async function OwnerDashboardPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Tổng Sân Con
             </CardTitle>
-            <div className="p-2 rounded-xl bg-teal-500/10 text-teal-600">
+            <div className="p-2 rounded-xl bg-teal-500/10 text-teal-700 dark:text-teal-400">
               <TrendingUp className="w-4 h-4" />
             </div>
           </CardHeader>
@@ -148,13 +149,13 @@ export default async function OwnerDashboardPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Tiền Cọc Đã Nhận
             </CardTitle>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400">
               <CircleDollarSign className="w-4 h-4" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">
-              {totalEstimatedDeposit.toLocaleString('vi-VN')} đ
+            <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+              {formatVnd(totalEstimatedDeposit)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Đã xác nhận qua VietQR PayOS
@@ -173,7 +174,7 @@ export default async function OwnerDashboardPage() {
             </CardDescription>
           </div>
           <Link href="/owner/schedule">
-            <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 cursor-pointer">
+            <Button variant="ghost" size="sm" className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 cursor-pointer">
               Xem toàn bộ lịch <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </Button>
           </Link>
@@ -187,7 +188,7 @@ export default async function OwnerDashboardPage() {
                 Hãy bắt đầu bằng cách thêm các cụm sân và sân con để người chơi có thể tìm kiếm và đặt chỗ.
               </p>
               <Link href="/owner/clubs">
-                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer">
+                <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer">
                   <Plus className="w-4 h-4 mr-1" /> Tạo Cụm Sân Ngay
                 </Button>
               </Link>
@@ -195,15 +196,9 @@ export default async function OwnerDashboardPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {bookings.map((item) => {
-                const startTime = new Date(item.start_time).toLocaleTimeString('vi-VN', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-                const endTime = new Date(item.end_time).toLocaleTimeString('vi-VN', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-                const dateStr = new Date(item.start_time).toLocaleDateString('vi-VN')
+                const startTime = formatTime(item.start_time)
+                const endTime = formatTime(item.end_time)
+                const dateStr = formatDate(item.start_time)
 
                 return (
                   <div
@@ -216,7 +211,7 @@ export default async function OwnerDashboardPage() {
                           {item.court?.name || 'Sân tiêu chuẩn'}
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3 text-emerald-600" />
+                          <Clock className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
                           <span>{startTime} - {endTime} ({dateStr})</span>
                         </div>
                       </div>
@@ -224,9 +219,9 @@ export default async function OwnerDashboardPage() {
                         variant="outline"
                         className={
                           item.status === 'confirmed'
-                            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                             : item.status === 'pending'
-                            ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
                             : 'bg-muted text-muted-foreground'
                         }
                       >
@@ -244,7 +239,7 @@ export default async function OwnerDashboardPage() {
                         <span>{item.profile?.full_name || 'Khách vãng lai'}</span>
                       </div>
                       <div className="font-bold text-foreground">
-                        Cọc: {Number(item.deposit_amount).toLocaleString('vi-VN')} đ
+                        Cọc: {formatVnd(item.deposit_amount)}
                       </div>
                     </div>
                   </div>

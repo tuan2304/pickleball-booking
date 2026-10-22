@@ -34,7 +34,7 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-lg shadow-xl border-emerald-500/20 bg-card/90 backdrop-blur-sm">
       <CardHeader className="space-y-2 text-center pb-6">
-        <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 shadow-inner">
+        <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shadow-inner">
           <Trophy className="w-6 h-6" />
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
@@ -67,7 +67,7 @@ export function RegisterForm() {
                     : 'border-border hover:border-emerald-500/40 bg-card text-muted-foreground'
                 }`}
               >
-                <div className={`p-2 rounded-lg ${role === 'owner' ? 'bg-emerald-600 text-white' : 'bg-muted'}`}>
+                <div className={`p-2 rounded-lg ${role === 'owner' ? 'bg-emerald-700 text-white' : 'bg-muted'}`}>
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
@@ -85,7 +85,7 @@ export function RegisterForm() {
                     : 'border-border hover:border-emerald-500/40 bg-card text-muted-foreground'
                 }`}
               >
-                <div className={`p-2 rounded-lg ${role === 'player' ? 'bg-emerald-600 text-white' : 'bg-muted'}`}>
+                <div className={`p-2 rounded-lg ${role === 'player' ? 'bg-emerald-700 text-white' : 'bg-muted'}`}>
                   <User className="w-5 h-5" />
                 </div>
                 <div>
@@ -150,7 +150,7 @@ export function RegisterForm() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+            className="w-full h-10 bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
           >
             {loading ? (
               <>
@@ -169,7 +169,7 @@ export function RegisterForm() {
             Đã có tài khoản?{' '}
             <Link
               href="/login"
-              className="font-semibold text-emerald-600 hover:text-emerald-500 hover:underline"
+              className="font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-500 hover:underline"
             >
               Đăng nhập tại đây
             </Link>

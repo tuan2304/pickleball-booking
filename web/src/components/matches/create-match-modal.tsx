@@ -13,9 +13,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { Flame, Loader2, AlertCircle } from 'lucide-react'
 
+import { MATCH_SKILL_IDS, SKILL_LEVELS, type MatchSkillId } from '@/lib/constants'
+import { formatNumber, formatVnd } from '@/lib/format'
 interface CreateMatchModalProps {
   bookingId: string
   courtName: string
@@ -41,7 +42,7 @@ export function CreateMatchModal({
   const [skillLevel, setSkillLevel] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all')
   const [requiredPlayers, setRequiredPlayers] = useState<number>(4)
   const [costSharingType, setCostSharingType] = useState<'split' | 'host_covers'>('split')
-  const [customCost, setCustomCost] = useState<string>('')
+  const [customCost] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -93,7 +94,7 @@ export function CreateMatchModal({
             Mở Ghép Kèo Cho Sân Đã Đặt
           </DialogTitle>
           <DialogDescription className="text-xs">
-            {clubName} ({courtName}) • Tổng tiền sân: {totalPrice.toLocaleString('vi-VN')} đ
+            {clubName} ({courtName}) • Tổng tiền sân: {formatVnd(totalPrice)}
           </DialogDescription>
         </DialogHeader>
 
@@ -152,13 +153,14 @@ export function CreateMatchModal({
               <Label className="text-xs font-semibold">Trình độ yêu cầu</Label>
               <select
                 value={skillLevel}
-                onChange={(e) => setSkillLevel(e.target.value as any)}
+                onChange={(e) => setSkillLevel(e.target.value as MatchSkillId)}
                 className="w-full h-9 text-xs rounded-md border border-input bg-background px-3 py-1 text-foreground"
               >
-                <option value="all">Mọi trình độ (Giao lưu)</option>
-                <option value="beginner">Mới chơi / Nhập môn</option>
-                <option value="intermediate">Trung bình / Khá</option>
-                <option value="advanced">Bán chuyên / Giỏi</option>
+                {MATCH_SKILL_IDS.map((id) => (
+                  <option key={id} value={id}>
+                    {SKILL_LEVELS[id].longLabel}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -171,7 +173,7 @@ export function CreateMatchModal({
                 onClick={() => setCostSharingType('split')}
                 className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                   costSharingType === 'split'
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                    ? 'bg-emerald-700 text-white border-emerald-600 shadow-xs'
                     : 'bg-background border-border text-muted-foreground hover:bg-muted'
                 }`}
               >
@@ -191,10 +193,10 @@ export function CreateMatchModal({
             </div>
 
             {costSharingType === 'split' && (
-              <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] flex justify-between items-center text-emerald-800 dark:text-emerald-300">
+              <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs flex justify-between items-center text-emerald-800 dark:text-emerald-300">
                 <span>Gợi ý mỗi người đóng:</span>
                 <span className="font-bold text-xs">
-                  {suggestedCost.toLocaleString('vi-VN')} đ/người
+                  {formatNumber(suggestedCost)} đ/người
                 </span>
               </div>
             )}
@@ -214,7 +216,7 @@ export function CreateMatchModal({
               type="submit"
               size="sm"
               disabled={loading}
-              className="bg-amber-500 hover:bg-amber-600 text-white font-bold cursor-pointer text-xs"
+              className="bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold cursor-pointer text-xs"
             >
               {loading ? (
                 <>

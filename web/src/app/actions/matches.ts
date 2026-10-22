@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyUser } from '@/lib/notify'
 
+import { isMatchSkill } from '@/lib/constants'
 export interface CreateMatchInput {
   bookingId: string
   title: string
@@ -16,7 +17,6 @@ export interface CreateMatchInput {
   costPerPerson?: number
 }
 
-const SKILL_LEVELS = ['all', 'beginner', 'intermediate', 'advanced'] as const
 
 /** Lấy người dùng hiện tại; mọi ghi vào DB sau đó dùng admin client nên phải tự kiểm tra quyền. */
 async function requireUser() {
@@ -88,7 +88,7 @@ export async function createMatch(input: CreateMatchInput) {
       title: title.slice(0, 100),
       description: input.description?.trim().slice(0, 500) || null,
       sport_type: sportType,
-      skill_level: SKILL_LEVELS.includes(input.skillLevel as never) ? input.skillLevel! : 'all',
+      skill_level: isMatchSkill(input.skillLevel) ? input.skillLevel : 'all',
       required_players: requiredPlayers,
       current_players: 1,
       cost_sharing_type: costSharingType,

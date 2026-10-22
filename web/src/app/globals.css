@@ -63,7 +63,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.596 0.145 163.2);
+  --primary: oklch(0.508 0.118 165.6);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -74,7 +74,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.696 0.17 162.5);
+  --ring: oklch(0.596 0.145 163.2);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -194,7 +194,7 @@
   }
   .card-lift:hover {
     transform: translateY(-6px);
-    box-shadow: 0 18px 40px -16px oklch(0.596 0.145 163.2 / 0.35);
+    box-shadow: 0 18px 40px -16px oklch(0.508 0.118 165.6 / 0.35);
   }
   /* Nền lưới mờ cho hero */
   .bg-grid {

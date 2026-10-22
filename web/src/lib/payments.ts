@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyUser } from '@/lib/notify'
+import { formatNumber as money } from '@/lib/format'
 
 export type SettleResult =
   | { ok: true; alreadyPaid?: boolean; needsRefund?: boolean }
@@ -13,7 +14,6 @@ interface SettleInput {
   reference: string
 }
 
-const money = (n: number) => Number(n).toLocaleString('vi-VN')
 
 /**
  * Ghi nhận một khoản cọc đã được thanh toán. Dùng chung cho webhook PayOS và giả lập khi dev.

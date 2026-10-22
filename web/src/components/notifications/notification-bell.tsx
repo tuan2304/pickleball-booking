@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -42,6 +41,12 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(tick)
+  }, [])
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // 1. Load initial notifications & count
@@ -51,7 +56,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         getNotifications(10),
         getUnreadNotificationsCount(),
       ])
-      setNotifications(list as any[])
+      setNotifications(list as NotificationItem[])
       setUnreadCount(count)
     }
     loadData()
@@ -71,7 +76,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           table: 'notifications',
           filter: `user_id=eq.${userId}`,
         },
-        (payload: any) => {
+        (payload) => {
           const newNotif = payload.new as NotificationItem
           setNotifications((prev) => [newNotif, ...prev.slice(0, 9)])
           setUnreadCount((prev) => prev + 1)
@@ -85,7 +90,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           table: 'notifications',
           filter: `user_id=eq.${userId}`,
         },
-        (payload: any) => {
+        (payload) => {
           const updated = payload.new as NotificationItem
           setNotifications((prev) =>
             prev.map((n) => (n.id === updated.id ? updated : n))
@@ -142,13 +147,13 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     switch (type) {
       case 'payment':
         return (
-          <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <CircleDollarSign className="w-4 h-4" />
           </div>
         )
       case 'match':
         return (
-          <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
             <Flame className="w-4 h-4" />
           </div>
         )
@@ -168,7 +173,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   }
 
   function formatTime(dateStr: string) {
-    const diff = Date.now() - new Date(dateStr).getTime()
+    const diff = now - new Date(dateStr).getTime()
     const minutes = Math.floor(diff / 60000)
     if (minutes < 1) return 'Vừa xong'
     if (minutes < 60) return `${minutes} phút trước`
@@ -189,7 +194,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs animate-pulse">
+          <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-xs animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -203,7 +208,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm text-foreground">Thông Báo</span>
               {unreadCount > 0 && (
-                <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-600 border-red-500/20 py-0">
+                <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/20 py-0">
                   {unreadCount} mới
                 </Badge>
               )}
@@ -214,7 +219,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                 type="button"
                 disabled={loading}
                 onClick={handleMarkAllAsRead}
-                className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
                 Đọc tất cả
@@ -228,7 +233,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
               <div className="p-8 text-center text-xs text-muted-foreground space-y-1">
                 <Bell className="w-7 h-7 mx-auto text-muted-foreground/40 mb-2" />
                 <div>Bạn chưa có thông báo nào</div>
-                <div className="text-[10px]">Các tin tức về đơn đặt và kèo sẽ hiển thị tại đây</div>
+                <div className="text-xs">Các tin tức về đơn đặt và kèo sẽ hiển thị tại đây</div>
               </div>
             ) : (
               notifications.map((notif) => (
@@ -251,17 +256,17 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                       )}
                     </div>
 
-                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-snug">
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-snug">
                       {notif.message}
                     </p>
 
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground/80 pt-0.5">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground/80 pt-0.5">
                       <span className="flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5" />
                         {formatTime(notif.created_at)}
                       </span>
                       {notif.link && (
-                        <span className="text-emerald-600 font-semibold flex items-center gap-0.5">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
                           Xem chi tiết <ExternalLink className="w-2.5 h-2.5" />
                         </span>
                       )}

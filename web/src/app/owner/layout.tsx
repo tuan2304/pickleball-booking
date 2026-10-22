@@ -31,13 +31,13 @@ export default async function OwnerLayout({
       <main className="flex-1 flex flex-col min-w-0 bg-muted/20">
         <header className="h-16 border-b border-border/80 px-8 flex items-center justify-between bg-card/40 backdrop-blur-sm sticky top-0 z-20">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
               Cổng Quản Trị Sân
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <NotificationBell userId={user.id} />
-            <span>Hệ thống: <strong className="text-emerald-600 font-semibold">Real-time Sẵn Sàng</strong></span>
+            <span>Hệ thống: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">Real-time Sẵn Sàng</strong></span>
           </div>
         </header>
 

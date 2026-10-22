@@ -32,7 +32,7 @@ export async function getClubReviews(clubId: string): Promise<ClubReview[]> {
     return []
   }
 
-  return (data as any) || []
+  return (data as unknown as ClubReview[]) || []
 }
 
 export async function submitClubReview(

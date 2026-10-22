@@ -10,17 +10,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   CalendarDays,
-  Clock,
-  CircleDollarSign,
   ShieldCheck,
   AlertCircle,
   Loader2,
   Check,
   Zap,
-  Users,
   Flame,
 } from 'lucide-react'
 
+import { MATCH_SKILL_IDS, SKILL_LEVELS, type MatchSkillId } from '@/lib/constants'
+import { formatNumber, formatVnd, formatDate } from '@/lib/format'
 interface CourtData {
   id: string
   name: string
@@ -82,11 +81,11 @@ export function TimeSlotPicker({
   // 4. Matchmaking state (Giai đoạn 4)
   const [isOpenMatch, setIsOpenMatch] = useState<boolean>(false)
   const [matchTitle, setMatchTitle] = useState<string>('')
-  const [matchDescription, setMatchDescription] = useState<string>('')
+  const [matchDescription] = useState<string>('')
   const [skillLevel, setSkillLevel] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all')
   const [requiredPlayers, setRequiredPlayers] = useState<number>(4)
   const [costSharingType, setCostSharingType] = useState<'split' | 'host_covers'>('split')
-  const [customCostPerPerson, setCustomCostPerPerson] = useState<string>('')
+  const [customCostPerPerson] = useState<string>('')
 
   const selectedCourt = courts.find((c) => c.id === selectedCourtId)
 
@@ -219,8 +218,8 @@ export function TimeSlotPicker({
                   }`}
                 >
                   <div className="text-sm">{court.name}</div>
-                  <div className="text-[11px] opacity-75 font-normal capitalize">
-                    {court.sport_type} • {Number(court.base_price_per_hour).toLocaleString('vi-VN')} đ/h
+                  <div className="text-xs opacity-75 font-normal capitalize">
+                    {court.sport_type} • {formatNumber(court.base_price_per_hour)} đ/h
                   </div>
                 </button>
               )
@@ -261,7 +260,7 @@ export function TimeSlotPicker({
           </div>
 
           <div className="flex items-center gap-2 p-2.5 rounded-xl border border-border bg-card max-w-xs">
-            <CalendarDays className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CalendarDays className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
             <input
               type="date"
               value={selectedDate}
@@ -304,7 +303,7 @@ export function TimeSlotPicker({
                     booked
                       ? 'bg-muted/40 text-muted-foreground/40 border border-border/40 cursor-not-allowed line-through'
                       : isSelected
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-102 ring-2 ring-emerald-500 ring-offset-2 ring-offset-background'
+                      ? 'bg-emerald-700 text-white shadow-md shadow-emerald-600/30 scale-102 ring-2 ring-emerald-500 ring-offset-2 ring-offset-background'
                       : 'bg-card border border-border text-foreground hover:border-emerald-500/50 hover:bg-emerald-500/5 cursor-pointer'
                   }`}
                 >
@@ -328,7 +327,7 @@ export function TimeSlotPicker({
                   onClick={() => setDuration(dur)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     duration === dur
-                      ? 'bg-emerald-600 text-white shadow-xs'
+                      ? 'bg-emerald-700 text-white shadow-xs'
                       : 'bg-muted text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -366,19 +365,19 @@ export function TimeSlotPicker({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Ngày chơi:</span>
                 <span className="font-semibold text-foreground">
-                  {new Date(selectedDate).toLocaleDateString('vi-VN')}
+                  {formatDate(selectedDate)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Khung giờ:</span>
-                <span className="font-semibold text-emerald-600">
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                   {startHour !== null
                     ? `${startHour}:00 - ${startHour + duration}:00 (${duration}h)`
                     : 'Chưa chọn giờ'}
                 </span>
               </div>
               {isPeakHour && (
-                <div className="flex items-center gap-1 text-[11px] text-amber-600 bg-amber-500/10 p-1.5 rounded-md font-medium">
+                <div className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 bg-amber-500/10 p-1.5 rounded-md font-medium">
                   <Zap className="w-3.5 h-3.5" />
                   Áp dụng giá Giờ Vàng / Cao Điểm
                 </div>
@@ -387,7 +386,7 @@ export function TimeSlotPicker({
 
             {/* Note */}
             <div className="space-y-1">
-              <Label htmlFor="bookingNote" className="text-[11px] text-muted-foreground">
+              <Label htmlFor="bookingNote" className="text-xs text-muted-foreground">
                 Ghi chú cho chủ sân (tùy chọn)
               </Label>
               <Input
@@ -412,22 +411,22 @@ export function TimeSlotPicker({
                 <div className="flex items-center gap-2">
                   <div
                     className={`p-1.5 rounded-lg ${
-                      isOpenMatch ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'
+                      isOpenMatch ? 'bg-amber-400 text-slate-900' : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     <Flame className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="text-xs font-bold leading-tight">Mở Ghép Kèo Giao Lưu</div>
-                    <div className="text-[10px] text-muted-foreground">Tuyển thêm người chơi chung</div>
+                    <div className="text-xs text-muted-foreground">Tuyển thêm người chơi chung</div>
                   </div>
                 </div>
                 <Badge
                   variant={isOpenMatch ? 'default' : 'outline'}
                   className={
                     isOpenMatch
-                      ? 'bg-amber-500 hover:bg-amber-600 text-white text-[10px]'
-                      : 'text-[10px]'
+                      ? 'bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs'
+                      : 'text-xs'
                   }
                 >
                   {isOpenMatch ? 'Đang Bật' : 'Bấm để bật'}
@@ -437,7 +436,7 @@ export function TimeSlotPicker({
               {isOpenMatch && (
                 <div className="mt-3 p-3.5 bg-amber-500/5 rounded-xl border border-amber-500/20 space-y-3">
                   <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-foreground">
+                    <Label className="text-xs font-semibold text-foreground">
                       Tiêu đề bài đăng ghép kèo
                     </Label>
                     <Input
@@ -450,7 +449,7 @@ export function TimeSlotPicker({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <Label className="text-[11px] font-semibold text-foreground">
+                      <Label className="text-xs font-semibold text-foreground">
                         Tổng số người cần
                       </Label>
                       <select
@@ -467,24 +466,25 @@ export function TimeSlotPicker({
                     </div>
 
                     <div className="space-y-1">
-                      <Label className="text-[11px] font-semibold text-foreground">
+                      <Label className="text-xs font-semibold text-foreground">
                         Trình độ yêu cầu
                       </Label>
                       <select
                         value={skillLevel}
-                        onChange={(e) => setSkillLevel(e.target.value as any)}
+                        onChange={(e) => setSkillLevel(e.target.value as MatchSkillId)}
                         className="w-full h-8 text-xs rounded-md border border-input bg-background px-2.5 py-1 text-foreground"
                       >
-                        <option value="all">Mọi trình độ (Giao lưu)</option>
-                        <option value="beginner">Mới chơi / Nhập môn</option>
-                        <option value="intermediate">Trung bình / Khá</option>
-                        <option value="advanced">Bán chuyên / Giỏi</option>
+                        {MATCH_SKILL_IDS.map((id) => (
+                          <option key={id} value={id}>
+                            {SKILL_LEVELS[id].longLabel}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] font-semibold text-foreground">
+                    <Label className="text-xs font-semibold text-foreground">
                       Hình thức chia tiền sân
                     </Label>
                     <div className="grid grid-cols-2 gap-2">
@@ -493,7 +493,7 @@ export function TimeSlotPicker({
                         onClick={() => setCostSharingType('split')}
                         className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                           costSharingType === 'split'
-                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            ? 'bg-emerald-700 text-white border-emerald-600 shadow-sm'
                             : 'bg-background border-border text-muted-foreground hover:bg-muted'
                         }`}
                       >
@@ -513,10 +513,10 @@ export function TimeSlotPicker({
                     </div>
 
                     {costSharingType === 'split' && (
-                      <div className="text-[11px] text-muted-foreground pt-1 flex justify-between items-center">
+                      <div className="text-xs text-muted-foreground pt-1 flex justify-between items-center">
                         <span>Gợi ý mỗi người đóng:</span>
-                        <span className="font-bold text-emerald-600">
-                          {Math.round(totalPrice / Math.max(1, requiredPlayers)).toLocaleString('vi-VN')} đ/người
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                          {formatNumber(Math.round(totalPrice / Math.max(1, requiredPlayers)))} đ/người
                         </span>
                       </div>
                     )}
@@ -529,16 +529,16 @@ export function TimeSlotPicker({
             <div className="space-y-2 pt-2">
               <div className="flex justify-between text-muted-foreground">
                 <span>Đơn giá theo giờ:</span>
-                <span>{pricePerHour.toLocaleString('vi-VN')} đ/h</span>
+                <span>{formatNumber(pricePerHour)} đ/h</span>
               </div>
               <div className="flex justify-between font-bold text-foreground text-sm">
                 <span>Tổng tiền sân:</span>
-                <span>{totalPrice.toLocaleString('vi-VN')} đ</span>
+                <span>{formatVnd(totalPrice)}</span>
               </div>
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
                 <span className="font-semibold">Tiền cọc giữ chỗ ({depositPercent}%):</span>
                 <span className="font-extrabold text-base">
-                  {depositAmount.toLocaleString('vi-VN')} đ
+                  {formatVnd(depositAmount)}
                 </span>
               </div>
             </div>
@@ -547,7 +547,7 @@ export function TimeSlotPicker({
               type="button"
               disabled={startHour === null || loading}
               onClick={handleBook}
-              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/30 cursor-pointer text-sm"
+              className="w-full h-11 bg-emerald-700 hover:bg-emerald-800 text-white font-bold shadow-md shadow-emerald-600/30 cursor-pointer text-sm"
             >
               {loading ? (
                 <>
@@ -559,8 +559,8 @@ export function TimeSlotPicker({
               )}
             </Button>
 
-            <div className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+            <div className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
               Sân được giữ tạm 15 phút chờ quét mã QR PayOS
             </div>
           </CardContent>

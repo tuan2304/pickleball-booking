@@ -5,6 +5,7 @@ import { PricingRuleModal } from '@/components/owner/pricing-rule-modal'
 import { PricingRuleActions } from '@/components/owner/pricing-rule-actions'
 import { Tags, Clock, CircleDollarSign } from 'lucide-react'
 
+import { formatNumber, formatVnd } from '@/lib/format'
 export default async function OwnerPricingPage() {
   const supabase = await getSupabase()
   const user = await getCurrentUser()
@@ -38,14 +39,14 @@ export default async function OwnerPricingPage() {
   }> = []
 
   clubs?.forEach((club) => {
-    club.courts?.forEach((court: any) => {
+    club.courts?.forEach((court) => {
       courtOptions.push({
         id: court.id,
         name: court.name,
         club_name: club.name,
       })
 
-      court.court_pricing_rules?.forEach((rule: any) => {
+      court.court_pricing_rules?.forEach((rule) => {
         rulesList.push({
           id: rule.id,
           name: rule.name,
@@ -108,7 +109,7 @@ export default async function OwnerPricingPage() {
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[11px]">
+                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs">
                         Áp dụng
                       </Badge>
                       <PricingRuleActions ruleId={rule.id} ruleName={rule.name} />
@@ -119,7 +120,7 @@ export default async function OwnerPricingPage() {
                 <CardContent className="space-y-3 text-xs">
                   <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                      <Clock className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                       Khung giờ:
                     </span>
                     <span className="font-bold text-foreground">
@@ -132,15 +133,15 @@ export default async function OwnerPricingPage() {
                       <CircleDollarSign className="w-3.5 h-3.5" />
                       Giá khung giờ:
                     </span>
-                    <span className="font-bold text-emerald-600 text-sm">
-                      {rule.price_per_hour.toLocaleString('vi-VN')} đ/h
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+                      {formatNumber(rule.price_per_hour)} đ/h
                     </span>
                   </div>
 
-                  <div className="text-[11px] text-muted-foreground flex justify-between">
-                    <span>Giá cơ bản: {rule.base_price.toLocaleString('vi-VN')} đ</span>
-                    <span className={diff >= 0 ? 'text-emerald-600 font-semibold' : 'text-amber-600'}>
-                      {diff >= 0 ? `+${diff.toLocaleString('vi-VN')} đ` : `${diff.toLocaleString('vi-VN')} đ`}
+                  <div className="text-xs text-muted-foreground flex justify-between">
+                    <span>Giá cơ bản: {formatVnd(rule.base_price)}</span>
+                    <span className={diff >= 0 ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-amber-700 dark:text-amber-400'}>
+                      {diff >= 0 ? `+${formatVnd(diff)}` : `${formatVnd(diff)}`}
                     </span>
                   </div>
                 </CardContent>

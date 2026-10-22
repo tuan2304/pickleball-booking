@@ -29,7 +29,7 @@ export async function getMatchMessages(matchId: string): Promise<MatchMessage[]>
     return []
   }
 
-  return (data as any) || []
+  return (data as unknown as MatchMessage[]) || []
 }
 
 export async function sendMatchMessage(matchId: string, content: string) {

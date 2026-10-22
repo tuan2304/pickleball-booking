@@ -12,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Plus, Loader2 } from 'lucide-react'
 
@@ -42,7 +41,7 @@ export function ClubFormModal() {
     <>
       <Button
         onClick={() => setOpen(true)}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm"
+        className="bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer shadow-sm"
       >
         <Plus className="w-4 h-4 mr-1.5" />
         Thêm Cụm Sân Mới
@@ -152,7 +151,7 @@ export function ClubFormModal() {
             <Button
               type="submit"
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+              className="bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
             >
               {loading ? (
                 <>

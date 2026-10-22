@@ -1,5 +1,6 @@
 import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { ScheduleView } from '@/components/owner/schedule-view'
+import type { BookingStatus } from '@/types/database'
 
 export default async function OwnerSchedulePage() {
   const supabase = await getSupabase()
@@ -61,14 +62,14 @@ export default async function OwnerSchedulePage() {
       .in('court_id', courtIds)
       .order('start_time', { ascending: true })
 
-    bookings = (bookingData || []).map((item: any) => ({
+    bookings = (bookingData || []).map((item) => ({
       id: item.id,
       court_id: item.court_id,
       start_time: item.start_time,
       end_time: item.end_time,
       total_price: Number(item.total_price),
       deposit_amount: Number(item.deposit_amount),
-      status: item.status,
+      status: item.status as BookingStatus,
       user_name: item.profile?.full_name || 'Khách vãng lai',
       user_phone: item.profile?.phone_number || 'Chưa cung cấp',
       court_name: item.court?.name || 'Sân tiêu chuẩn',

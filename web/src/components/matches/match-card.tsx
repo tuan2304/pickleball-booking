@@ -2,9 +2,12 @@ import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Calendar, Clock, MapPin, Users, Flame, ArrowRight, ShieldCheck, Trophy } from 'lucide-react'
+import { Clock, MapPin, Users, ArrowRight } from 'lucide-react'
 
-interface MatchCardProps {
+import { sportLabel, skillInfo } from '@/lib/constants'
+import { SportIcon } from '@/components/ui/sport-icon'
+import { formatNumber, formatTime, formatShortDate } from '@/lib/format'
+export interface MatchCardProps {
   match: {
     id: string
     title: string
@@ -41,33 +44,9 @@ interface MatchCardProps {
   }
 }
 
-const SPORT_ICONS: Record<string, string> = {
-  football: '⚽',
-  badminton: '🏸',
-  pickleball: '🏓',
-  tennis: '🎾',
-  basketball: '🏀',
-}
-
-const SPORT_NAMES: Record<string, string> = {
-  football: 'Bóng đá',
-  badminton: 'Cầu lông',
-  pickleball: 'Pickleball',
-  tennis: 'Tennis',
-  basketball: 'Bóng rổ',
-}
-
-const SKILL_LABELS: Record<string, { label: string; color: string }> = {
-  all: { label: 'Mọi trình độ', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-  beginner: { label: 'Mới chơi', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-  intermediate: { label: 'Trung bình', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-  advanced: { label: 'Bán chuyên', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
-}
-
 export function MatchCard({ match }: MatchCardProps) {
-  const sportEmoji = SPORT_ICONS[match.sport_type] || '🏆'
-  const sportName = SPORT_NAMES[match.sport_type] || match.sport_type
-  const skillInfo = SKILL_LABELS[match.skill_level] || SKILL_LABELS.all
+  const sportName = sportLabel(match.sport_type)
+  const skill = skillInfo(match.skill_level)
 
   const court = match.booking?.court
   const club = court?.club
@@ -78,11 +57,11 @@ export function MatchCard({ match }: MatchCardProps) {
   const slotsLeft = Math.max(0, match.required_players - match.current_players)
 
   const timeStr = startTime && endTime
-    ? `${startTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
+    ? `${formatTime(startTime)} - ${formatTime(endTime)}`
     : 'Thời gian thỏa thuận'
 
   const dateStr = startTime
-    ? startTime.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' })
+    ? formatShortDate(startTime)
     : ''
 
   const isHostCovers = match.cost_sharing_type === 'host_covers'
@@ -96,10 +75,11 @@ export function MatchCard({ match }: MatchCardProps) {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-wrap">
               <Badge variant="outline" className="text-xs font-semibold py-0.5 px-2 bg-muted/60">
-                {sportEmoji} {sportName}
+                <SportIcon sport={match.sport_type} className="w-3.5 h-3.5 mr-1" />
+                {sportName}
               </Badge>
-              <Badge variant="outline" className={`text-[11px] font-semibold py-0.5 px-2 ${skillInfo.color}`}>
-                {skillInfo.label}
+              <Badge variant="outline" className={`text-xs font-semibold py-0.5 px-2 ${skill.badge}`}>
+                {skill.label}
               </Badge>
             </div>
 
@@ -108,7 +88,7 @@ export function MatchCard({ match }: MatchCardProps) {
               className={
                 isFull
                   ? 'bg-muted text-muted-foreground border-border text-xs'
-                  : 'bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs font-bold'
+                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs font-bold'
               }
             >
               {isFull ? 'Đã đủ người' : `Còn ${slotsLeft} chỗ trống`}
@@ -154,7 +134,7 @@ export function MatchCard({ match }: MatchCardProps) {
                 {match.creator?.full_name ? match.creator.full_name.charAt(0).toUpperCase() : 'H'}
               </div>
               <div className="text-xs">
-                <span className="text-muted-foreground text-[10px] block">Chủ kèo</span>
+                <span className="text-muted-foreground text-xs block">Chủ kèo</span>
                 <span className="font-semibold text-foreground line-clamp-1">
                   {match.creator?.full_name || 'Người dùng'}
                 </span>
@@ -173,12 +153,12 @@ export function MatchCard({ match }: MatchCardProps) {
           {/* Pricing & CTA */}
           <div className="flex items-center justify-between gap-2 pt-1">
             <div>
-              <div className="text-[10px] text-muted-foreground">Chi phí tham gia</div>
+              <div className="text-xs text-muted-foreground">Chi phí tham gia</div>
               <div className="font-extrabold text-sm text-foreground">
                 {isHostCovers ? (
-                  <span className="text-emerald-600">Miễn phí (Chủ bao)</span>
+                  <span className="text-emerald-700 dark:text-emerald-400">Miễn phí (Chủ bao)</span>
                 ) : (
-                  <span className="text-amber-600">{costNumber.toLocaleString('vi-VN')} đ/người</span>
+                  <span className="text-amber-700 dark:text-amber-400">{formatNumber(costNumber)} đ/người</span>
                 )}
               </div>
             </div>
@@ -186,7 +166,7 @@ export function MatchCard({ match }: MatchCardProps) {
             <Link href={`/matches/${match.id}`}>
               <Button
                 size="sm"
-                className="bg-amber-500 hover:bg-amber-600 text-white font-bold cursor-pointer text-xs shadow-xs shadow-amber-500/20"
+                className="bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold cursor-pointer text-xs shadow-xs shadow-amber-500/20"
               >
                 Xem Kèo
                 <ArrowRight className="w-3.5 h-3.5 ml-1" />

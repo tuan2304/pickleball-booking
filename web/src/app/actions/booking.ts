@@ -8,6 +8,7 @@ import { settlePayment } from '@/lib/payments'
 import { computePrice } from '@/lib/pricing'
 import { getVnParts } from '@/lib/datetime'
 
+import { isMatchSkill } from '@/lib/constants'
 export interface MatchConfig {
   isOpenMatch: boolean
   title?: string
@@ -27,7 +28,6 @@ const HOLD_MINUTES = 15
 const MAX_PENDING_PER_USER = 3
 const MAX_BOOKING_HOURS = 6
 const MAX_DAYS_AHEAD = 60
-const SKILL_LEVELS = ['all', 'beginner', 'intermediate', 'advanced'] as const
 
 function minutesFromTime(t: string | null | undefined, fallback: number) {
   if (!t) return fallback
@@ -188,7 +188,7 @@ export async function createBooking(
       title: matchConfig.title?.trim().slice(0, 100) || `Kèo ${court.name} - Giao lưu thể thao`,
       description: matchConfig.description?.trim().slice(0, 500) || null,
       sport_type: court.sport_type || 'football',
-      skill_level: SKILL_LEVELS.includes(matchConfig.skillLevel as never) ? matchConfig.skillLevel! : 'all',
+      skill_level: isMatchSkill(matchConfig.skillLevel) ? matchConfig.skillLevel : 'all',
       required_players: requiredPlayers,
       current_players: 1,
       cost_sharing_type: costSharingType,

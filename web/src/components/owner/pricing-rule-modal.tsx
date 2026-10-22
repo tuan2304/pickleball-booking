@@ -12,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Plus, Loader2 } from 'lucide-react'
 
@@ -46,7 +45,7 @@ export function PricingRuleModal({ courts }: PricingRuleModalProps) {
     <>
       <Button
         onClick={() => setOpen(true)}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm"
+        className="bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer shadow-sm"
       >
         <Plus className="w-4 h-4 mr-1.5" />
         Thêm Khung Giờ Giá Mới
@@ -146,7 +145,7 @@ export function PricingRuleModal({ courts }: PricingRuleModalProps) {
             <Button
               type="submit"
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+              className="bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
             >
               {loading ? (
                 <>

@@ -52,14 +52,14 @@ export function OwnerSidebar({ userEmail, userName }: OwnerSidebarProps) {
       <div>
         {/* Brand Header */}
         <div className="h-16 px-6 border-b border-border flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
+          <div className="w-9 h-9 rounded-xl bg-emerald-700 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
             <Trophy className="w-5 h-5" />
           </div>
           <div>
             <span className="font-extrabold tracking-tight text-lg text-foreground">
-              SPORT<span className="text-emerald-600">ARENA</span>
+              SPORT<span className="text-emerald-700 dark:text-emerald-400">ARENA</span>
             </span>
-            <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+            <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
               Dành cho Chủ Sân
             </div>
           </div>
@@ -68,7 +68,7 @@ export function OwnerSidebar({ userEmail, userName }: OwnerSidebarProps) {
         {/* Profile Card */}
         <div className="p-4 border-b border-border/50 bg-emerald-500/5 m-3 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-600/20 text-emerald-600 font-bold flex items-center justify-center border border-emerald-500/30">
+            <div className="w-10 h-10 rounded-full bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-center border border-emerald-500/30">
               {userName ? userName.charAt(0).toUpperCase() : 'C'}
             </div>
             <div className="overflow-hidden">
@@ -79,7 +79,7 @@ export function OwnerSidebar({ userEmail, userName }: OwnerSidebarProps) {
             </div>
           </div>
           <div className="mt-2.5 flex items-center justify-between">
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px] font-semibold">
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs font-semibold">
               <ShieldCheck className="w-3 h-3 mr-1" />
               Chủ Sân Xác Thực
             </Badge>
@@ -97,7 +97,7 @@ export function OwnerSidebar({ userEmail, userName }: OwnerSidebarProps) {
                 href={item.href}
                 className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 font-semibold'
+                    ? 'bg-emerald-700 text-white shadow-sm shadow-emerald-600/30 font-semibold'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
                 }`}
               >

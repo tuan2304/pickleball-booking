@@ -14,13 +14,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  User,
   CheckCircle2,
   XCircle,
   Loader2,
-  Radio,
 } from 'lucide-react'
 
+import { formatVnd, formatTime, formatDate } from '@/lib/format'
 interface ScheduleCourt {
   id: string
   name: string
@@ -124,13 +123,14 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
             variant="outline"
             size="icon"
             onClick={() => changeDate(-1)}
+            aria-label="Ngày trước"
             className="h-9 w-9 cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/30">
-            <CalendarDays className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CalendarDays className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
             <input
               type="date"
               value={selectedDate}
@@ -143,6 +143,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
             variant="outline"
             size="icon"
             onClick={() => changeDate(1)}
+            aria-label="Ngày sau"
             className="h-9 w-9 cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
@@ -152,7 +153,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
             variant="ghost"
             size="sm"
             onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-            className="text-xs text-emerald-600 hover:text-emerald-700 cursor-pointer"
+            className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 cursor-pointer"
           >
             Hôm nay
           </Button>
@@ -160,7 +161,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
 
         {/* View Switcher Toggle & Realtime Badge */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>{isLive ? 'Realtime Live' : 'Đang kết nối...'}</span>
           </div>
@@ -171,7 +172,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
               onClick={() => setViewMode('timeline')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'timeline'
-                  ? 'bg-background text-emerald-600 shadow-xs'
+                  ? 'bg-background text-emerald-700 dark:text-emerald-400 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -183,7 +184,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
               onClick={() => setViewMode('table')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-background text-emerald-600 shadow-xs'
+                  ? 'bg-background text-emerald-700 dark:text-emerald-400 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -196,7 +197,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
 
       {courts.length === 0 ? (
         <Card className="border-dashed border-2 p-12 text-center text-muted-foreground">
-          Chưa có sân con nào được tạo. Hãy vào mục "Cụm sân & Sân con" để thêm sân trước.
+          Chưa có sân con nào được tạo. Hãy vào mục &quot;Cụm sân &amp; Sân con&quot; để thêm sân trước.
         </Card>
       ) : viewMode === 'timeline' ? (
         /* ========================================================
@@ -208,7 +209,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
               <div>
                 <CardTitle className="text-base font-bold">Lưới Lịch Chi Tiết Theo Sân</CardTitle>
                 <CardDescription className="text-xs">
-                  Hiển thị khung giờ từ 06:00 đến 23:00 ngày {new Date(selectedDate).toLocaleDateString('vi-VN')}
+                  Hiển thị khung giờ từ 06:00 đến 23:00 ngày {formatDate(selectedDate)}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-3 text-xs">
@@ -240,7 +241,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                     className="p-3 text-xs font-bold text-foreground border-r border-border last:border-r-0 text-center"
                   >
                     <div className="truncate">{court.name}</div>
-                    <div className="text-[10px] text-muted-foreground font-normal truncate">
+                    <div className="text-xs text-muted-foreground font-normal truncate">
                       {court.club_name}
                     </div>
                   </div>
@@ -295,7 +296,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                                 <div className="font-bold truncate">
                                   {booking.user_name || 'Khách đặt'}
                                 </div>
-                                <div className="text-[10px] flex items-center justify-between opacity-80 mt-0.5">
+                                <div className="text-xs flex items-center justify-between opacity-80 mt-0.5">
                                   <span>{booking.user_phone}</span>
                                   <span className="font-semibold">
                                     {booking.status === 'confirmed' ? 'Đã cọc' : 'Chờ cọc'}
@@ -312,7 +313,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                               />
                             )
                           ) : (
-                            <span className="text-[10px] text-muted-foreground/30 font-mono">
+                            <span className="text-xs text-muted-foreground/30 font-mono">
                               Trống
                             </span>
                           )}
@@ -335,7 +336,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
               <div>
                 <CardTitle className="text-base font-bold">Danh Sách Đơn Đặt Sân</CardTitle>
                 <CardDescription className="text-xs">
-                  Tổng hợp các lịch đặt ngày {new Date(selectedDate).toLocaleDateString('vi-VN')}
+                  Tổng hợp các lịch đặt ngày {formatDate(selectedDate)}
                 </CardDescription>
               </div>
 
@@ -348,7 +349,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                     onClick={() => setStatusFilter(status)}
                     className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer capitalize ${
                       statusFilter === status
-                        ? 'bg-emerald-600 text-white shadow-xs'
+                        ? 'bg-emerald-700 text-white shadow-xs'
                         : 'bg-muted text-muted-foreground hover:text-foreground'
                     }`}
                   >
@@ -373,7 +374,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-muted/40 text-muted-foreground uppercase text-[10px] border-b border-border">
+                  <thead className="bg-muted/40 text-muted-foreground uppercase text-xs border-b border-border">
                     <tr>
                       <th className="py-3 px-4">Sân con</th>
                       <th className="py-3 px-4">Khách hàng</th>
@@ -386,14 +387,8 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                   </thead>
                   <tbody className="divide-y divide-border/60">
                     {filteredTableBookings.map((b) => {
-                      const startTime = new Date(b.start_time).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                      const endTime = new Date(b.end_time).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
+                      const startTime = formatTime(b.start_time)
+                      const endTime = formatTime(b.end_time)
 
                       const isUpdating = updatingId === b.id
 
@@ -404,28 +399,28 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                           </td>
                           <td className="py-3 px-4">
                             <div className="font-semibold text-foreground">{b.user_name}</div>
-                            <div className="text-[11px] text-muted-foreground">{b.user_phone}</div>
+                            <div className="text-xs text-muted-foreground">{b.user_phone}</div>
                           </td>
                           <td className="py-3 px-4 font-medium text-foreground">
                             <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-emerald-600" />
+                              <Clock className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
                               {startTime} - {endTime}
                             </span>
                           </td>
                           <td className="py-3 px-4 font-semibold text-foreground">
-                            {Number(b.total_price).toLocaleString('vi-VN')} đ
+                            {formatVnd(b.total_price)}
                           </td>
-                          <td className="py-3 px-4 font-bold text-emerald-600">
-                            {Number(b.deposit_amount).toLocaleString('vi-VN')} đ
+                          <td className="py-3 px-4 font-bold text-emerald-700 dark:text-emerald-400">
+                            {formatVnd(b.deposit_amount)}
                           </td>
                           <td className="py-3 px-4">
                             <Badge
                               variant="outline"
                               className={
                                 b.status === 'confirmed'
-                                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                                   : b.status === 'pending'
-                                  ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                                  ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
                                   : 'bg-muted text-muted-foreground'
                               }
                             >
@@ -440,7 +435,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                           </td>
                           <td className="py-3 px-4 text-right">
                             {isUpdating ? (
-                              <Loader2 className="w-4 h-4 animate-spin ml-auto text-emerald-600" />
+                              <Loader2 className="w-4 h-4 animate-spin ml-auto text-emerald-700 dark:text-emerald-400" />
                             ) : (
                               <div className="flex items-center justify-end gap-1.5">
                                 {b.status === 'pending' && (
@@ -448,7 +443,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                                     size="sm"
                                     variant="outline"
                                     onClick={() => handleStatusChange(b.id, 'confirmed')}
-                                    className="h-7 text-[11px] text-emerald-600 hover:bg-emerald-500/10 cursor-pointer"
+                                    className="h-7 text-xs text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
                                   >
                                     <CheckCircle2 className="w-3 h-3 mr-1" />
                                     Duyệt Cọc
@@ -459,7 +454,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                                     size="sm"
                                     variant="outline"
                                     onClick={() => handleStatusChange(b.id, 'completed')}
-                                    className="h-7 text-[11px] text-blue-600 hover:bg-blue-500/10 cursor-pointer"
+                                    className="h-7 text-xs text-blue-600 hover:bg-blue-500/10 cursor-pointer"
                                   >
                                     Hoàn Tất
                                   </Button>
@@ -469,7 +464,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => handleStatusChange(b.id, 'cancelled')}
-                                    className="h-7 text-[11px] text-red-600 hover:bg-red-500/10 cursor-pointer"
+                                    className="h-7 text-xs text-red-600 hover:bg-red-500/10 cursor-pointer"
                                   >
                                     <XCircle className="w-3 h-3 mr-1" />
                                     Hủy

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { MainHeader } from '@/components/layout/main-header'
-import { MatchDetailView } from '@/components/matches/match-detail-view'
+import { MatchDetailView, type MatchDetailProps } from '@/components/matches/match-detail-view'
 import { getMatchMessages } from '@/app/actions/chat'
 
 interface MatchDetailPageProps {
@@ -90,8 +90,8 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <MatchDetailView
-          match={match as any}
-          participants={(participants as any) || []}
+          match={match as unknown as MatchDetailProps['match']}
+          participants={(participants ?? []) as unknown as MatchDetailProps['participants']}
           initialMessages={initialMessages}
           currentUserId={user?.id || null}
         />

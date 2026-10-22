@@ -8,22 +8,24 @@ import { Trophy, CalendarCheck, Users, QrCode, ArrowRight, Flame, LogOut, Compas
 import { Reveal } from '@/components/ui/reveal'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
+import { SPORT_IDS } from '@/lib/constants'
+import { SportIcon } from '@/components/ui/sport-icon'
 const FEATURES = [
   {
     icon: CalendarCheck,
-    tone: 'bg-emerald-500/10 text-emerald-600',
+    tone: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
     title: 'Lịch đặt không bao giờ trùng',
     desc: 'Hệ thống khóa khung giờ ngay khi có người giữ chỗ và tự nhả sau 15 phút nếu chưa cọc.',
   },
   {
     icon: QrCode,
-    tone: 'bg-teal-500/10 text-teal-600',
+    tone: 'bg-teal-500/10 text-teal-700 dark:text-teal-400',
     title: 'Cọc nhanh bằng VietQR',
     desc: 'Mỗi đơn có một mã QR riêng. Chuyển khoản xong, trạng thái cập nhật tức thì, không cần tải lại trang.',
   },
   {
     icon: Users,
-    tone: 'bg-amber-500/10 text-amber-600',
+    tone: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
     title: 'Ghép kèo, chia tiền sân',
     desc: 'Mở kèo ngay lúc đặt sân, chọn trình độ, chia đều tiền hoặc bao trọn. Chủ kèo duyệt từng người.',
   },
@@ -59,11 +61,11 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
+            <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
               <Trophy className="w-5 h-5" />
             </div>
             <span className="font-extrabold tracking-wide text-2xl" style={{ fontFamily: 'var(--font-display)' }}>
-              SPORT<span className="text-emerald-600">ARENA</span>
+              SPORT<span className="text-emerald-700 dark:text-emerald-400">ARENA</span>
             </span>
           </div>
 
@@ -74,7 +76,7 @@ export default async function Home() {
                 href="/clubs"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
               >
-                <Compass className="w-4 h-4 text-emerald-600" />
+                <Compass className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                 Khám Phá Sân
               </Link>
               <Link
@@ -88,7 +90,7 @@ export default async function Home() {
                 href="/my-bookings"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
               >
-                <Calendar className="w-4 h-4 text-teal-600" />
+                <Calendar className="w-4 h-4 text-teal-700 dark:text-teal-400" />
                 Lịch Đặt
               </Link>
             </nav>
@@ -101,14 +103,14 @@ export default async function Home() {
                 <NotificationBell userId={user.id} />
 
                 <div className="flex items-center gap-2 pl-1">
-                  <div className="w-8 h-8 rounded-full bg-emerald-600/20 text-emerald-600 font-bold flex items-center justify-center text-xs border border-emerald-500/30">
+                  <div className="w-8 h-8 rounded-full bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-center text-xs border border-emerald-500/30">
                     {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <div className="hidden sm:block text-left text-xs">
                     <div className="font-bold text-foreground truncate max-w-[120px]">
                       {profile?.full_name || 'Người dùng'}
                     </div>
-                    <Badge variant="outline" className="text-[10px] py-0 px-1 border-emerald-500/30 text-emerald-600">
+                    <Badge variant="outline" className="text-xs py-0 px-1 border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
                       {isOwner ? 'Chủ sân' : 'Người chơi'}
                     </Badge>
                   </div>
@@ -116,7 +118,7 @@ export default async function Home() {
 
                 {isOwner && (
                   <Link href="/owner/dashboard">
-                    <Button size="sm" variant="outline" className="text-xs font-semibold border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 cursor-pointer hidden sm:flex">
+                    <Button size="sm" variant="outline" className="text-xs font-semibold border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer hidden sm:flex">
                       Cổng Chủ Sân
                     </Button>
                   </Link>
@@ -129,6 +131,7 @@ export default async function Home() {
                     variant="ghost"
                     className="h-8 w-8 text-muted-foreground hover:text-red-600 cursor-pointer"
                     title="Đăng xuất"
+                  aria-label="Đăng xuất"
                   >
                     <LogOut className="w-4 h-4" />
                   </Button>
@@ -142,7 +145,7 @@ export default async function Home() {
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 font-semibold cursor-pointer">
+                  <Button className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm shadow-emerald-600/20 font-semibold cursor-pointer">
                     Đăng ký tài khoản
                   </Button>
                 </Link>
@@ -190,31 +193,31 @@ export default async function Home() {
             style={{ '--i': 3 } as CSSProperties}
           >
             <Link href="/clubs">
-              <Button size="lg" className="btn-shine w-full sm:w-auto h-12 px-7 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/30 text-base cursor-pointer hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-600/40">
+              <Button size="lg" className="btn-shine w-full sm:w-auto h-12 px-7 bg-emerald-700 hover:bg-emerald-800 text-white font-bold shadow-lg shadow-emerald-600/30 text-base cursor-pointer hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-600/40">
                 Khám phá sân thể thao <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
             <Link href="/matches">
-              <Button size="lg" className="btn-shine w-full sm:w-auto h-12 px-7 bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-lg shadow-amber-500/30 text-base cursor-pointer hover:-translate-y-0.5 hover:shadow-xl hover:shadow-amber-500/40">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-7 font-bold text-base cursor-pointer border-2 border-amber-500/60 text-amber-800 dark:text-amber-300 hover:bg-amber-400/15">
                 <Flame className="w-4 h-4 mr-2" />
                 Tìm kèo giao lưu
               </Button>
             </Link>
           </div>
 
-          {/* Các quả bóng nảy nhẹ cho có hồn */}
+          {/* Biểu tượng các môn thể thao (SVG, nảy nhẹ) */}
           <div
-            className="flex items-center justify-center gap-6 pt-8 text-3xl select-none animate-fade-in stagger"
+            className="flex items-center justify-center gap-4 pt-8 select-none animate-fade-in stagger"
             style={{ '--i': 5 } as CSSProperties}
             aria-hidden
           >
-            {['⚽', '🏸', '🏓', '🎾', '🏀'].map((e, i) => (
+            {SPORT_IDS.map((id, i) => (
               <span
-                key={e}
-                className="inline-block"
+                key={id}
+                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-card text-emerald-700 dark:text-emerald-400 shadow-sm"
                 style={{ animation: `ball-bounce 2.4s ease-in-out ${i * 0.18}s infinite` }}
               >
-                {e}
+                <SportIcon sport={id} className="h-6 w-6" />
               </span>
             ))}
           </div>

@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { MainHeader } from '@/components/layout/main-header'
-import { BookingPaymentView } from '@/components/booking/booking-payment-view'
+import { BookingPaymentView, type BookingPaymentViewProps } from '@/components/booking/booking-payment-view'
 import { isPaymentSimulationEnabled } from '@/lib/payos'
 
 interface BookingPageProps {
@@ -44,9 +44,10 @@ export default async function BookingPage({ params }: BookingPageProps) {
     notFound()
   }
 
-  const courtData = (booking as any).court || { name: 'Sân tiêu chuẩn', sport_type: 'Thể thao' }
+  const courtData = booking.court || { name: 'Sân tiêu chuẩn', sport_type: 'Thể thao' }
   const clubData = courtData.club || { name: 'Cụm sân thể thao', address: 'Địa chỉ cụm sân' }
-  const paymentData = (booking as any).payments?.[0] || null
+  // cột metadata là JSONB nên có kiểu Json; ép về dạng thông tin ngân hàng do createBooking ghi vào
+  const paymentData = (booking.payments?.[0] ?? null) as unknown as BookingPaymentViewProps['payment']
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -66,6 +67,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
           }}
           payment={paymentData}
           simulationEnabled={isPaymentSimulationEnabled()}
+          // eslint-disable-next-line react-hooks/purity -- server component, chạy một lần mỗi request
           serverNow={Date.now()}
           court={courtData}
           club={clubData}

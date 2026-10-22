@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { simulateDepositPayment, cancelExpiredBooking } from '@/app/actions/booking'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Clock,
   QrCode,
@@ -18,11 +16,10 @@ import {
   Copy,
   Check,
   ArrowRight,
-  Calendar,
-  Building2,
 } from 'lucide-react'
 
-interface BookingPaymentViewProps {
+import { formatVnd, formatTime, formatDate } from '@/lib/format'
+export interface BookingPaymentViewProps {
   booking: {
     id: string
     court_id: string
@@ -82,7 +79,6 @@ export function BookingPaymentView({
   simulationEnabled = false,
   serverNow,
 }: BookingPaymentViewProps) {
-  const router = useRouter()
   const [currentStatus, setCurrentStatus] = useState<string>(booking.status)
   const [copied, setCopied] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<boolean>(false)
@@ -135,7 +131,7 @@ export function BookingPaymentView({
           table: 'bookings',
           filter: `id=eq.${booking.id}`,
         },
-        (payload: any) => {
+        (payload) => {
           if (payload.new && payload.new.status) {
             setCurrentStatus(payload.new.status)
           }
@@ -197,7 +193,7 @@ export function BookingPaymentView({
   if (currentStatus === 'confirmed') {
     return (
       <Card className="max-w-xl mx-auto border-emerald-500/30 shadow-xl overflow-hidden bg-card">
-        <div className="bg-emerald-600 p-8 text-center text-white space-y-3">
+        <div className="bg-emerald-700 p-8 text-center text-white space-y-3">
           <div className="w-16 h-16 rounded-full bg-white/20 text-white flex items-center justify-center mx-auto shadow-inner">
             <CheckCircle2 className="w-10 h-10" />
           </div>
@@ -219,16 +215,16 @@ export function BookingPaymentView({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Thời gian:</span>
-              <span className="font-semibold text-emerald-600">
-                {new Date(booking.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} -{' '}
-                {new Date(booking.end_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} (
-                {new Date(booking.start_time).toLocaleDateString('vi-VN')})
+              <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                {formatTime(booking.start_time)} -{' '}
+                {formatTime(booking.end_time)} (
+                {formatDate(booking.start_time)})
               </span>
             </div>
             <div className="flex justify-between pt-2 border-t border-border">
               <span className="text-muted-foreground">Tiền cọc đã thanh toán:</span>
-              <span className="font-bold text-emerald-600 text-sm">
-                {depositAmount.toLocaleString('vi-VN')} đ
+              <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+                {formatVnd(depositAmount)}
               </span>
             </div>
           </div>
@@ -240,7 +236,7 @@ export function BookingPaymentView({
               </Button>
             </Link>
             <Link href="/clubs" className="flex-1">
-              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer">
+              <Button className="w-full bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer">
                 Tiếp Tục Đặt Sân <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
             </Link>
@@ -260,7 +256,7 @@ export function BookingPaymentView({
           Đơn giữ chỗ 15 phút đã quá hạn hoặc đã bị hủy. Sân đã được tự động giải phóng để người khác có thể đặt.
         </p>
         <Link href="/clubs">
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer font-bold">
+          <Button className="bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer font-bold">
             Tìm & Đặt Lại Khung Giờ Khác
           </Button>
         </Link>
@@ -276,7 +272,7 @@ export function BookingPaymentView({
         <CardHeader className="bg-muted/30 pb-3 border-b border-border/60">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
                 <QrCode className="w-5 h-5" />
               </div>
               <div>
@@ -289,7 +285,7 @@ export function BookingPaymentView({
 
             {/* Countdown Badge */}
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 font-mono font-bold text-xs">
-              <Clock className="w-3.5 h-3.5 animate-pulse text-amber-600" />
+              <Clock className="w-3.5 h-3.5 animate-pulse text-amber-700 dark:text-amber-400" />
               <span>{formattedTime}</span>
             </div>
           </div>
@@ -299,6 +295,7 @@ export function BookingPaymentView({
           {/* QR Code Container */}
           <div className="p-3 bg-white rounded-2xl border-2 border-emerald-500/30 shadow-md">
             {qrUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- ảnh QR động từ img.vietqr.io, cần giữ nguyên độ nét
               <img
                 src={qrUrl}
                 alt="Mã VietQR đặt cọc"
@@ -313,8 +310,8 @@ export function BookingPaymentView({
 
           <div className="text-center space-y-1">
             <div className="text-xs text-muted-foreground">Số tiền cọc cần chuyển:</div>
-            <div className="text-2xl font-black text-emerald-600">
-              {depositAmount.toLocaleString('vi-VN')} đ
+            <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
+              {formatVnd(depositAmount)}
             </div>
           </div>
 
@@ -338,7 +335,7 @@ export function BookingPaymentView({
                     className="text-muted-foreground hover:text-emerald-600 cursor-pointer"
                     title="Copy STK"
                   >
-                    {copied === 'account' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied === 'account' ? <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
@@ -361,7 +358,7 @@ export function BookingPaymentView({
                   className="text-emerald-700 hover:text-emerald-800 cursor-pointer"
                   title="Copy nội dung"
                 >
-                  {copied === 'content' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied === 'content' ? <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
@@ -375,7 +372,7 @@ export function BookingPaymentView({
                 type="button"
                 disabled={confirming}
                 onClick={handleSimulateConfirm}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold cursor-pointer"
+                className="w-full bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold cursor-pointer"
               >
                 {confirming ? (
                   <>
@@ -383,14 +380,14 @@ export function BookingPaymentView({
                     Đang giả lập...
                   </>
                 ) : (
-                  '🧪 [DEV] Giả lập đã chuyển khoản'
+                  '[DEV] Giả lập đã chuyển khoản'
                 )}
               </Button>
               {error && <p className="text-xs text-red-600 text-center">{error}</p>}
             </>
           )}
 
-          <p className="text-[11px] text-center text-muted-foreground flex items-center justify-center gap-1">
+          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             Kênh Realtime đang hoạt động — Hệ thống tự động chuyển trang khi nhận tiền
           </p>
@@ -421,14 +418,14 @@ export function BookingPaymentView({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Ngày chơi:</span>
                 <span className="font-semibold text-foreground">
-                  {new Date(booking.start_time).toLocaleDateString('vi-VN')}
+                  {formatDate(booking.start_time)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Khung giờ:</span>
-                <span className="font-bold text-emerald-600">
-                  {new Date(booking.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} -{' '}
-                  {new Date(booking.end_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                  {formatTime(booking.start_time)} -{' '}
+                  {formatTime(booking.end_time)}
                 </span>
               </div>
             </div>
@@ -436,15 +433,15 @@ export function BookingPaymentView({
             <div className="pt-2 border-t border-border/60 space-y-1.5">
               <div className="flex justify-between text-muted-foreground">
                 <span>Tổng tiền sân:</span>
-                <span>{Number(booking.total_price).toLocaleString('vi-VN')} đ</span>
+                <span>{formatVnd(booking.total_price)}</span>
               </div>
-              <div className="flex justify-between font-bold text-emerald-600 text-sm">
+              <div className="flex justify-between font-bold text-emerald-700 dark:text-emerald-400 text-sm">
                 <span>Tiền cọc giữ chỗ:</span>
-                <span>{depositAmount.toLocaleString('vi-VN')} đ</span>
+                <span>{formatVnd(depositAmount)}</span>
               </div>
-              <div className="flex justify-between text-muted-foreground text-[11px]">
+              <div className="flex justify-between text-muted-foreground text-xs">
                 <span>Còn lại thanh toán tại sân:</span>
-                <span>{(Number(booking.total_price) - depositAmount).toLocaleString('vi-VN')} đ</span>
+                <span>{formatVnd(Number(booking.total_price) - depositAmount)}</span>
               </div>
             </div>
           </CardContent>

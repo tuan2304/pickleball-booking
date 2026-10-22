@@ -2,10 +2,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { MainHeader } from '@/components/layout/main-header'
 import { MatchFilters } from '@/components/matches/match-filters'
-import { MatchCard } from '@/components/matches/match-card'
+import { MatchCard, type MatchCardProps } from '@/components/matches/match-card'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Flame, PlusCircle, Trophy, Users, ShieldCheck } from 'lucide-react'
+import { Flame, PlusCircle, Trophy, Users } from 'lucide-react'
 
 interface MatchesPageProps {
   searchParams: Promise<{
@@ -75,7 +75,7 @@ export default async function MatchesPage({ searchParams }: MatchesPageProps) {
     query = query.ilike('title', `%${q}%`)
   }
 
-  const { data: matches, error } = await query
+  const { data: matches } = await query
   const matchList = matches || []
 
   return (
@@ -150,7 +150,7 @@ export default async function MatchesPage({ searchParams }: MatchesPageProps) {
               </p>
               <div className="pt-2 flex justify-center gap-3">
                 <Link href="/my-bookings">
-                  <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white cursor-pointer">
+                  <Button size="sm" className="bg-amber-400 hover:bg-amber-300 text-slate-900 cursor-pointer">
                     Mở Ghép Kèo Ngay
                   </Button>
                 </Link>
@@ -158,8 +158,8 @@ export default async function MatchesPage({ searchParams }: MatchesPageProps) {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {matchList.map((match: any) => (
-                <MatchCard key={match.id} match={match} />
+              {matchList.map((match) => (
+                <MatchCard key={match.id} match={match as unknown as MatchCardProps['match']} />
               ))}
             </div>
           )}

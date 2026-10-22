@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import { MatchMessage } from '@/types/database'
 import { sendMatchMessage, getMatchMessages } from '@/app/actions/chat'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, Send, User } from 'lucide-react'
+import { MessageSquare, Send } from 'lucide-react'
 
+import { formatTime } from '@/lib/format'
 interface MatchChatBoxProps {
   matchId: string
   currentUserId?: string
@@ -53,7 +54,7 @@ export function MatchChatBox({
           filter: `match_id=eq.${matchId}`,
         },
         async (payload) => {
-          const newMsg = payload.new as any
+          const newMsg = payload.new as MatchMessage
 
           // Lấy profile người gửi nếu chưa có
           let profile = undefined
@@ -121,15 +122,15 @@ export function MatchChatBox({
       {/* Header */}
       <div className="px-5 py-3.5 bg-muted/40 border-b border-border/70 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
             <MessageSquare className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-bold text-sm text-foreground">Phòng Chat Giao Lưu</h3>
-            <p className="text-[11px] text-muted-foreground">Thảo luận trực tiếp cùng các thành viên</p>
+            <p className="text-xs text-muted-foreground">Thảo luận trực tiếp cùng các thành viên</p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           Live Realtime
         </span>
@@ -150,10 +151,7 @@ export function MatchChatBox({
             const isMe = msg.user_id === currentUserId
             const senderName = msg.profile?.full_name || 'Người chơi'
             const initial = senderName.charAt(0).toUpperCase()
-            const timeStr = new Date(msg.created_at).toLocaleTimeString('vi-VN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
+            const timeStr = formatTime(msg.created_at)
 
             return (
               <div
@@ -164,7 +162,7 @@ export function MatchChatBox({
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                     isMe
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-emerald-700 text-white'
                       : 'bg-muted text-muted-foreground border border-border'
                   }`}
                 >
@@ -174,7 +172,7 @@ export function MatchChatBox({
                 {/* Bubble */}
                 <div className={`max-w-[75%] space-y-1 ${isMe ? 'items-end' : 'items-start'}`}>
                   {!isMe && (
-                    <div className="text-[11px] font-semibold text-muted-foreground px-1">
+                    <div className="text-xs font-semibold text-muted-foreground px-1">
                       {senderName}
                     </div>
                   )}
@@ -182,7 +180,7 @@ export function MatchChatBox({
                   <div
                     className={`px-3.5 py-2 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                       isMe
-                        ? 'bg-emerald-600 text-white rounded-tr-xs'
+                        ? 'bg-emerald-700 text-white rounded-tr-xs'
                         : 'bg-muted/70 text-foreground border border-border/60 rounded-tl-xs'
                     }`}
                   >
@@ -190,7 +188,7 @@ export function MatchChatBox({
                   </div>
 
                   <div
-                    className={`text-[9px] text-muted-foreground px-1 ${
+                    className={`text-xs text-muted-foreground px-1 ${
                       isMe ? 'text-right' : 'text-left'
                     }`}
                   >
@@ -221,7 +219,7 @@ export function MatchChatBox({
         />
         <Button
           size="sm"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl px-4 h-9 cursor-pointer shadow-xs"
+          className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl px-4 h-9 cursor-pointer shadow-xs"
           disabled={!currentUserId || !inputMessage.trim() || sending}
           onClick={handleSend}
         >

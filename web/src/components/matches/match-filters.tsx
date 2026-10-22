@@ -2,30 +2,10 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Input } from '@/components/ui/input'
-import { Search, Flame, Users, Sparkles } from 'lucide-react'
+import { Search } from 'lucide-react'
 
-const SPORTS = [
-  { id: 'all', label: 'Tất cả môn' },
-  { id: 'football', label: '⚽ Bóng đá' },
-  { id: 'badminton', label: '🏸 Cầu lông' },
-  { id: 'pickleball', label: '🏓 Pickleball' },
-  { id: 'tennis', label: '🎾 Tennis' },
-  { id: 'basketball', label: '🏀 Bóng rổ' },
-]
-
-const SKILL_LEVELS = [
-  { id: 'all', label: 'Tất cả trình độ' },
-  { id: 'beginner', label: 'Mới chơi' },
-  { id: 'intermediate', label: 'Trung bình' },
-  { id: 'advanced', label: 'Bán chuyên' },
-]
-
-const COST_TYPES = [
-  { id: 'all', label: 'Tất cả chi phí' },
-  { id: 'split', label: 'Chia đều' },
-  { id: 'host_covers', label: 'Chủ bao trọn (0đ)' },
-]
-
+import { SPORT_FILTER_OPTIONS, SKILL_FILTER_OPTIONS, COST_TYPE_FILTER_OPTIONS } from '@/lib/constants'
+import { SportIcon } from '@/components/ui/sport-icon'
 export function MatchFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -66,7 +46,7 @@ export function MatchFilters() {
             onChange={(e) => updateParams('skill', e.target.value)}
             className="h-10 rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full sm:w-40 cursor-pointer"
           >
-            {SKILL_LEVELS.map((s) => (
+            {SKILL_FILTER_OPTIONS.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
               </option>
@@ -79,7 +59,7 @@ export function MatchFilters() {
             onChange={(e) => updateParams('cost', e.target.value)}
             className="h-10 rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full sm:w-44 cursor-pointer"
           >
-            {COST_TYPES.map((c) => (
+            {COST_TYPE_FILTER_OPTIONS.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.label}
               </option>
@@ -90,19 +70,20 @@ export function MatchFilters() {
 
       {/* Sport Category Pills */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
-        {SPORTS.map((sport) => {
+        {SPORT_FILTER_OPTIONS.map((sport) => {
           const isActive = currentSport === sport.id
           return (
             <button
               key={sport.id}
               type="button"
               onClick={() => updateParams('sport', sport.id)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-amber-500 text-white shadow-xs font-bold shadow-amber-500/20'
+                  ? 'bg-amber-400 text-slate-900 shadow-xs font-bold shadow-amber-500/20'
                   : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/50'
               }`}
             >
+              {sport.id !== 'all' && <SportIcon sport={sport.id} className="w-3.5 h-3.5" />}
               {sport.label}
             </button>
           )

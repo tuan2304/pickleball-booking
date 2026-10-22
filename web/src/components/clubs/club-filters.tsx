@@ -4,15 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Search, MapPin } from 'lucide-react'
 
-const SPORTS = [
-  { id: 'all', label: 'Tất cả môn' },
-  { id: 'football', label: '⚽ Bóng đá' },
-  { id: 'badminton', label: '🏸 Cầu lông' },
-  { id: 'pickleball', label: '🏓 Pickleball' },
-  { id: 'tennis', label: '🎾 Tennis' },
-  { id: 'basketball', label: '🏀 Bóng rổ' },
-]
-
+import { SPORT_FILTER_OPTIONS } from '@/lib/constants'
+import { SportIcon } from '@/components/ui/sport-icon'
 const DISTRICTS = [
   'Tất cả khu vực',
   'Quận 1',
@@ -58,7 +51,7 @@ export function ClubFilters() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+          <MapPin className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
           <select
             value={currentDistrict}
             onChange={(e) => updateParams('district', e.target.value)}
@@ -75,19 +68,20 @@ export function ClubFilters() {
 
       {/* Sport Category Pills */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
-        {SPORTS.map((sport) => {
+        {SPORT_FILTER_OPTIONS.map((sport) => {
           const isActive = currentSport === sport.id
           return (
             <button
               key={sport.id}
               type="button"
               onClick={() => updateParams('sport', sport.id)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-emerald-600 text-white shadow-xs font-bold shadow-emerald-600/20'
+                  ? 'bg-emerald-700 text-white shadow-xs font-bold shadow-emerald-600/20'
                   : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/50'
               }`}
             >
+              {sport.id !== 'all' && <SportIcon sport={sport.id} className="w-3.5 h-3.5" />}
               {sport.label}
             </button>
           )

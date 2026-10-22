@@ -37,10 +37,10 @@ export function CourtItemActions({ courtId, isActive }: CourtItemActionsProps) {
             size="sm"
             variant="ghost"
             onClick={handleToggle}
-            className={`h-7 px-2 text-[11px] cursor-pointer ${
+            className={`h-7 px-2 text-xs cursor-pointer ${
               isActive
-                ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-500/10'
-                : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10'
+                ? 'text-amber-700 dark:text-amber-400 hover:text-amber-700 hover:bg-amber-500/10'
+                : 'text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-500/10'
             }`}
           >
             <Power className="w-3 h-3 mr-1" />

@@ -7,8 +7,7 @@ import { ClubReviewsSection } from '@/components/clubs/club-reviews-section'
 import { getClubReviews } from '@/app/actions/reviews'
 import { Badge } from '@/components/ui/badge'
 import { RemoteImage } from '@/components/ui/remote-image'
-import { Button } from '@/components/ui/button'
-import { MapPin, Clock, ArrowLeft, ShieldCheck, Trophy, Sparkles } from 'lucide-react'
+import { MapPin, Clock, ArrowLeft, Sparkles } from 'lucide-react'
 
 interface ClubDetailPageProps {
   params: Promise<{
@@ -45,7 +44,7 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
     notFound()
   }
 
-  const courtList = (courts || []).map((c: any) => ({
+  const courtList = (courts || []).map((c) => ({
     id: c.id,
     name: c.name,
     sport_type: c.sport_type,
@@ -53,7 +52,7 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
     base_price_per_hour: Number(c.base_price_per_hour),
     deposit_percentage: Number(c.deposit_percentage),
     is_active: c.is_active,
-    court_pricing_rules: (c.court_pricing_rules || []).map((r: any) => ({
+    court_pricing_rules: (c.court_pricing_rules || []).map((r) => ({
       id: r.id,
       name: r.name,
       start_time: r.start_time,
@@ -120,7 +119,7 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
             <div className="absolute top-4 left-4 flex gap-2">
-              <Badge className="bg-emerald-600/90 text-white font-semibold backdrop-blur-xs">
+              <Badge className="bg-emerald-800/95 text-white font-semibold backdrop-blur-xs">
                 <Sparkles className="w-3 h-3 mr-1" /> Cụm Sân Hoạt Động
               </Badge>
             </div>
@@ -134,11 +133,11 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
 
               <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <MapPin className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
                   {club.address}, {club.ward ? `${club.ward}, ` : ''}{club.district}, {club.city}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-teal-600 shrink-0" />
+                  <Clock className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0" />
                   Giờ mở cửa: {club.open_time?.slice(0, 5)} - {club.close_time?.slice(0, 5)}
                 </span>
               </div>

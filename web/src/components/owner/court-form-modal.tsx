@@ -12,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Plus, Loader2 } from 'lucide-react'
 
@@ -51,7 +50,7 @@ export function CourtFormModal({ clubId, clubName }: CourtFormModalProps) {
         size="sm"
         variant="outline"
         onClick={() => setOpen(true)}
-        className="border-dashed border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 cursor-pointer"
+        className="border-dashed border-emerald-500/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5 mr-1" />
         Thêm Sân Con
@@ -153,7 +152,7 @@ export function CourtFormModal({ clubId, clubName }: CourtFormModalProps) {
             <Button
               type="submit"
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+              className="bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
             >
               {loading ? (
                 <>

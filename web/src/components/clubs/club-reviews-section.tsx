@@ -6,8 +6,9 @@ import { ClubReview } from '@/types/database'
 import { submitClubReview } from '@/app/actions/reviews'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Star, MessageSquare, ThumbsUp, Send, User } from 'lucide-react'
+import { Star, MessageSquare, ThumbsUp, Send } from 'lucide-react'
 
+import { formatDate } from '@/lib/format'
 interface ClubReviewsSectionProps {
   clubId: string
   currentUserId?: string | null
@@ -49,7 +50,7 @@ export function ClubReviewsSection({
         },
         async (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const newRev = payload.new as any
+            const newRev = payload.new as ClubReview
 
             let profile = undefined
             if (newRev.user_id) {
@@ -140,13 +141,13 @@ export function ClubReviewsSection({
           <Card className="border-border shadow-xs">
             <CardHeader className="bg-muted/30 border-b border-border/60 pb-3">
               <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-                <ThumbsUp className="w-4 h-4 text-emerald-600" />
+                <ThumbsUp className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                 Gửi Đánh Giá Của Bạn
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               {successMsg && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold">
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
                   {successMsg}
                 </div>
               )}
@@ -208,7 +209,7 @@ export function ClubReviewsSection({
                   type="submit"
                   size="sm"
                   disabled={!currentUserId || submitting}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer text-xs h-9 shadow-xs"
+                  className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer text-xs h-9 shadow-xs"
                 >
                   <Send className="w-3.5 h-3.5 mr-1.5" />
                   {submitting ? 'Đang gửi...' : 'Gửi Đánh Giá'}
@@ -230,11 +231,7 @@ export function ClubReviewsSection({
             reviews.map((r) => {
               const author = r.profile?.full_name || 'Người chơi ẩn danh'
               const initial = author.charAt(0).toUpperCase()
-              const dateStr = new Date(r.created_at).toLocaleDateString('vi-VN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              })
+              const dateStr = formatDate(r.created_at)
 
               return (
                 <div
@@ -243,12 +240,12 @@ export function ClubReviewsSection({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-emerald-600/20 text-emerald-600 font-bold flex items-center justify-center text-xs border border-emerald-500/20">
+                      <div className="w-8 h-8 rounded-full bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-center text-xs border border-emerald-500/20">
                         {initial}
                       </div>
                       <div>
                         <div className="text-xs font-bold text-foreground">{author}</div>
-                        <div className="text-[10px] text-muted-foreground">{dateStr}</div>
+                        <div className="text-xs text-muted-foreground">{dateStr}</div>
                       </div>
                     </div>
 

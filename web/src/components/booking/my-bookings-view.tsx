@@ -13,23 +13,76 @@ import {
   ArrowRight,
   Trophy,
   Flame,
-  Users,
-  CheckCircle2,
-  AlertCircle,
   PlusCircle,
 } from 'lucide-react'
 
+import { formatVnd, formatTime, formatDate, formatShortDate } from '@/lib/format'
+interface ClubRef {
+  id?: string
+  name: string
+  address?: string | null
+}
+
+interface CourtRef {
+  id?: string
+  name: string
+  sport_type?: string
+  club: ClubRef | null
+}
+
+interface BookingMatchRef {
+  id: string
+  title: string
+  status: string
+  current_players: number
+  required_players: number
+}
+
+export interface MyBooking {
+  id: string
+  start_time: string
+  end_time: string
+  total_price: number
+  deposit_amount: number
+  status: string
+  court: CourtRef | null
+  /** Quan hệ 1-1 (matches.booking_id là UNIQUE) nên API trả một object, không phải mảng */
+  matches: BookingMatchRef | null
+}
+
+export interface MyParticipation {
+  id: string
+  status: string
+  message: string | null
+  match: {
+    id: string
+    title: string
+    status: string
+    sport_type: string
+    cost_sharing_type: string
+    cost_per_person: number | null
+    current_players: number
+    required_players: number
+    booking: {
+      id: string
+      start_time: string
+      end_time: string
+      court: CourtRef | null
+    } | null
+  } | null
+}
+
 interface MyBookingsViewProps {
-  bookings: any[]
-  participations: any[]
+  bookings: MyBooking[]
+  participations: MyParticipation[]
 }
 
 export function MyBookingsView({ bookings, participations }: MyBookingsViewProps) {
   const [activeTab, setActiveTab] = useState<'bookings' | 'matches'>('bookings')
-  const [selectedBookingForMatch, setSelectedBookingForMatch] = useState<any | null>(null)
+  const [selectedBookingForMatch, setSelectedBookingForMatch] = useState<MyBooking | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  function handleOpenCreateMatch(booking: any) {
+  function handleOpenCreateMatch(booking: MyBooking) {
     setSelectedBookingForMatch(booking)
     setIsModalOpen(true)
   }
@@ -43,7 +96,7 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
           onClick={() => setActiveTab('bookings')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === 'bookings'
-              ? 'bg-emerald-600 text-white shadow-sm'
+              ? 'bg-emerald-700 text-white shadow-sm'
               : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
@@ -56,7 +109,7 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
           onClick={() => setActiveTab('matches')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === 'matches'
-              ? 'bg-amber-500 text-white shadow-sm'
+              ? 'bg-amber-400 text-slate-900 shadow-sm'
               : 'text-muted-foreground hover:bg-muted/60'
           }`}
         >
@@ -76,29 +129,23 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                 Hãy khám phá các cụm sân thể thao gần bạn và đặt chỗ ngay hôm nay!
               </p>
               <Link href="/clubs">
-                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer mt-2">
+                <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer mt-2">
                   Khám Phá Sân Ngay
                 </Button>
               </Link>
             </Card>
           ) : (
             <div className="space-y-4">
-              {bookings.map((item: any) => {
-                const court = item.court || { name: 'Sân tiêu chuẩn' }
+              {bookings.map((item) => {
+                const court: CourtRef = item.court ?? { name: 'Sân tiêu chuẩn', club: null }
                 const club = court.club || { name: 'Cụm sân' }
                 const isPending = item.status === 'pending'
                 const isConfirmed = item.status === 'confirmed'
-                const match = item.matches && item.matches.length > 0 ? item.matches[0] : null
+                const match = item.matches
 
-                const startTime = new Date(item.start_time).toLocaleTimeString('vi-VN', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-                const endTime = new Date(item.end_time).toLocaleTimeString('vi-VN', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-                const dateStr = new Date(item.start_time).toLocaleDateString('vi-VN')
+                const startTime = formatTime(item.start_time)
+                const endTime = formatTime(item.end_time)
+                const dateStr = formatDate(item.start_time)
 
                 return (
                   <Card
@@ -113,9 +160,9 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                             variant="outline"
                             className={
                               isConfirmed
-                                ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs'
+                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs'
                                 : isPending
-                                ? 'bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs'
+                                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs'
                                 : 'bg-muted text-muted-foreground text-xs'
                             }
                           >
@@ -125,9 +172,9 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                           {match && (
                             <Badge
                               variant="outline"
-                              className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs font-semibold"
+                              className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs font-semibold"
                             >
-                              🔥 Đang Mở Ghép Kèo ({match.current_players}/{match.required_players})
+                              <Flame className="w-3.5 h-3.5 inline -mt-0.5 mr-1" aria-hidden />Đang Mở Ghép Kèo ({match.current_players}/{match.required_players})
                             </Badge>
                           )}
                         </div>
@@ -136,7 +183,7 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                           <span className="font-semibold text-foreground">{court.name}</span>
                           <span>•</span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                            <Clock className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                             {startTime} - {endTime} ({dateStr})
                           </span>
                         </div>
@@ -151,9 +198,9 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
 
                       <div className="flex items-center justify-between md:justify-end gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-border/50 flex-wrap">
                         <div className="text-right mr-2 hidden sm:block">
-                          <div className="text-[11px] text-muted-foreground">Tiền cọc</div>
-                          <div className="text-sm font-bold text-emerald-600">
-                            {Number(item.deposit_amount).toLocaleString('vi-VN')} đ
+                          <div className="text-xs text-muted-foreground">Tiền cọc</div>
+                          <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                            {formatVnd(item.deposit_amount)}
                           </div>
                         </div>
 
@@ -162,7 +209,7 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                           <Link href={`/matches/${match.id}`}>
                             <Button
                               size="sm"
-                              className="bg-amber-500 hover:bg-amber-600 text-white font-semibold cursor-pointer text-xs"
+                              className="bg-amber-400 hover:bg-amber-300 text-slate-900 font-semibold cursor-pointer text-xs"
                             >
                               <Flame className="w-3.5 h-3.5 mr-1" />
                               Quản Lý Kèo
@@ -173,7 +220,7 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                             size="sm"
                             variant="outline"
                             onClick={() => handleOpenCreateMatch(item)}
-                            className="border-amber-500/40 text-amber-600 hover:bg-amber-500/10 cursor-pointer text-xs font-semibold"
+                            className="border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer text-xs font-semibold"
                           >
                             <PlusCircle className="w-3.5 h-3.5 mr-1" />
                             Mở Ghép Kèo
@@ -186,7 +233,7 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                             variant={isPending ? 'default' : 'outline'}
                             className={
                               isPending
-                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer text-xs'
+                                ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer text-xs'
                                 : 'cursor-pointer text-xs'
                             }
                           >
@@ -215,14 +262,14 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                 Xem ngay danh sách các kèo giao lưu đang tuyển người để cùng rèn luyện thể thao!
               </p>
               <Link href="/matches">
-                <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white cursor-pointer mt-2">
+                <Button size="sm" className="bg-amber-400 hover:bg-amber-300 text-slate-900 cursor-pointer mt-2">
                   Khám Phá Kèo Giao Lưu
                 </Button>
               </Link>
             </Card>
           ) : (
             <div className="space-y-4">
-              {participations.map((part: any) => {
+              {participations.map((part) => {
                 const match = part.match
                 if (!match) return null
 
@@ -231,16 +278,15 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                 const club = court?.club
                 const isAccepted = part.status === 'accepted'
                 const isPending = part.status === 'pending'
-                const isRejected = part.status === 'rejected'
 
                 const startTime = booking?.start_time ? new Date(booking.start_time) : null
                 const endTime = booking?.end_time ? new Date(booking.end_time) : null
 
                 const timeStr = startTime && endTime
-                  ? `${startTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
+                  ? `${formatTime(startTime)} - ${formatTime(endTime)}`
                   : ''
                 const dateStr = startTime
-                  ? startTime.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' })
+                  ? formatShortDate(startTime)
                   : ''
 
                 return (
@@ -253,9 +299,9 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                             variant="outline"
                             className={
                               isAccepted
-                                ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs font-semibold'
+                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs font-semibold'
                                 : isPending
-                                ? 'bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs font-semibold'
+                                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs font-semibold'
                                 : 'bg-red-500/10 text-red-600 border-red-500/30 text-xs'
                             }
                           >
@@ -285,16 +331,16 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
 
                       <div className="flex items-center gap-3 justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50">
                         <div className="text-right mr-2">
-                          <div className="text-[10px] text-muted-foreground">Chi phí</div>
+                          <div className="text-xs text-muted-foreground">Chi phí</div>
                           <div className="text-xs font-bold text-foreground">
                             {match.cost_sharing_type === 'host_covers'
                               ? 'Miễn phí'
-                              : `${Number(match.cost_per_person || 0).toLocaleString('vi-VN')} đ`}
+                              : `${formatVnd(match.cost_per_person || 0)}`}
                           </div>
                         </div>
 
                         <Link href={`/matches/${match.id}`}>
-                          <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white font-bold cursor-pointer text-xs">
+                          <Button size="sm" className="bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold cursor-pointer text-xs">
                             Chi Tiết Kèo
                             <ArrowRight className="w-3.5 h-3.5 ml-1" />
                           </Button>
