@@ -1,3 +1,5 @@
+import { ThemeToggle } from '@/components/theme/theme-toggle'
+
 export default function AuthLayout({
   children,
 }: {
@@ -8,6 +10,10 @@ export default function AuthLayout({
       {/* Decorative Sporty Glows */}
       <div className="absolute top-1/4 -left-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
 
       <div className="relative z-10 w-full flex justify-center py-8">
         {children}

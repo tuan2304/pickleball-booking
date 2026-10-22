@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser, getCurrentProfile } from '@/lib/supabase/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
 /** Khu vực chỉ dành cho quản trị nền tảng: mọi trang con đều đi qua kiểm tra này. */
@@ -24,7 +25,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30">
             Khu vực quản trị
           </span>
-          <NotificationBell userId={user.id} />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <NotificationBell userId={user.id} />
+          </div>
         </header>
         <div className="p-8 flex-1">{children}</div>
       </main>

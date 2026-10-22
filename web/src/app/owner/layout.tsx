@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { OwnerSidebar } from '@/components/owner/owner-sidebar'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
 export default async function OwnerLayout({
@@ -40,6 +41,7 @@ export default async function OwnerLayout({
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <ThemeToggle />
             <NotificationBell userId={user.id} />
             <span>Hệ thống: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">Real-time Sẵn Sàng</strong></span>
           </div>

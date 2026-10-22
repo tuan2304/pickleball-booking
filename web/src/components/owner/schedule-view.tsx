@@ -151,7 +151,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
             variant="ghost"
             size="sm"
             onClick={() => setSelectedDate(vnDateKey(Date.now()))}
-            className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 cursor-pointer"
+            className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer"
           >
             Hôm nay
           </Button>
@@ -449,7 +449,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                                     size="sm"
                                     variant="outline"
                                     onClick={() => handleStatusChange(b.id, 'completed')}
-                                    className="h-7 text-xs text-blue-600 hover:bg-blue-500/10 cursor-pointer"
+                                    className="h-7 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 cursor-pointer"
                                   >
                                     Hoàn Tất
                                   </Button>
@@ -459,7 +459,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => handleStatusChange(b.id, 'cancelled')}
-                                    className="h-7 text-xs text-red-600 hover:bg-red-500/10 cursor-pointer"
+                                    className="h-7 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 cursor-pointer"
                                   >
                                     <XCircle className="w-3 h-3 mr-1" />
                                     Hủy

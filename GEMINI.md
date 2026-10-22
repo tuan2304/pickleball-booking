@@ -222,3 +222,6 @@
     - Hỗ trợ (ticket): chủ sân và người chơi gửi yêu cầu ở `/support` (tối đa 5 yêu cầu chưa giải quyết), admin trả lời ở `/admin/tickets`, tin nhắn cập nhật realtime, thông báo qua chuông cho cả hai phía. Người dùng chỉ đọc được phiếu của mình (RLS), mọi thao tác ghi đi qua server action có kiểm tra quyền.
     - Gửi thông báo cập nhật `/admin/announcements`: chọn loại (cập nhật/bảo trì/ưu đãi) và đối tượng (tất cả/chủ sân/người chơi), mỗi người nhận một thông báo trong chuông; link đính kèm chỉ nhận đường dẫn nội bộ; có hộp xác nhận vì không thu hồi được.
     - Migration mới `20261023000000_admin_console.sql` (cần `supabase db push` trước khi merge vào master), thêm 21 test vitest và nhóm test RLS số 10 (102/102 test SQL).
+- **2026-10-23 (Giao diện sáng / tối):**
+    - Thêm nút chuyển sáng/tối ở trang chủ, thanh điều hướng, cổng chủ sân, khu quản trị và trang đăng nhập/đăng ký; mặc định theo hệ thống, lựa chọn được nhớ. Thông báo nhỏ (sonner) đổi theo giao diện.
+    - Bảng màu tối mới cùng tông thương hiệu, thêm biến thể `dark:` cho chữ đỏ/xanh/vàng đậm (tương phản ≥ 4.5:1), phủ tối đậm hơn cho hộp thoại. Đã chụp kiểm tra trang chủ, danh sách sân, kèo, đăng nhập ở cả hai chế độ. Quy tắc ghi ở [DESIGN.md](DESIGN.md).

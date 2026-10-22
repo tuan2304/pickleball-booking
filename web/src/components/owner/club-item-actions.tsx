@@ -40,7 +40,7 @@ export function ClubItemActions({ clubId, clubName }: ClubItemActionsProps) {
           size="sm"
           variant="ghost"
           onClick={handleDelete}
-          className="h-8 w-8 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 cursor-pointer"
+          className="h-8 w-8 p-0 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 cursor-pointer"
           title="Xóa cụm sân"
         >
           <Trash2 className="w-3.5 h-3.5" />

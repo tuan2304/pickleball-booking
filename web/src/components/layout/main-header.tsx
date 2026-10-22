@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { Suspense } from 'react'
 import { getCurrentUser, getCurrentProfile } from '@/lib/supabase/session'
 import { logout } from '@/app/actions/auth'
@@ -83,9 +84,9 @@ async function HeaderContent() {
           {isAdmin && (
             <Link
               href="/admin"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-amber-700 hover:bg-amber-500/10 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-amber-700 dark:hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
             >
-              <ShieldCheck className="w-4 h-4 text-amber-600" />
+              <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               Quản Trị
             </Link>
           )}
@@ -93,7 +94,7 @@ async function HeaderContent() {
           {isOwner && (
             <Link
               href="/owner/dashboard"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
             >
               <Building2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
               Cổng Chủ Sân
@@ -103,6 +104,7 @@ async function HeaderContent() {
 
         {/* User Auth Info */}
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {user ? (
             <div className="flex items-center gap-2 sm:gap-3">
               <NotificationBell userId={user.id} />
@@ -126,7 +128,7 @@ async function HeaderContent() {
                   type="submit"
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8 text-muted-foreground hover:text-red-600 cursor-pointer"
+                  className="h-8 w-8 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
                   title="Đăng xuất"
                   aria-label="Đăng xuất"
                 >

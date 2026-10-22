@@ -330,7 +330,7 @@ export function BookingPaymentView({
                   <button
                     type="button"
                     onClick={() => copyText(bank.account_number!, 'account')}
-                    className="text-muted-foreground hover:text-emerald-600 cursor-pointer"
+                    className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer"
                     title="Copy STK"
                   >
                     {copied === 'account' ? <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -353,7 +353,7 @@ export function BookingPaymentView({
                 <button
                   type="button"
                   onClick={() => copyText(transferContent, 'content')}
-                  className="text-emerald-700 hover:text-emerald-800 cursor-pointer"
+                  className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 cursor-pointer"
                   title="Copy nội dung"
                 >
                   {copied === 'content' ? <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}

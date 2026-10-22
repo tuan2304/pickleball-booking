@@ -60,13 +60,13 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         <div className="grid gap-3 md:grid-cols-2">
           {stats.open_tickets > 0 && (
             <Link href="/admin/tickets" className="flex items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm hover:bg-amber-500/15">
-              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" aria-hidden />
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
               <span><b>{stats.open_tickets}</b> yêu cầu hỗ trợ đang chờ trả lời</span>
             </Link>
           )}
           {stats.deposits.needs_refund > 0 && (
             <div className="flex items-center gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm">
-              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" aria-hidden />
+              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" aria-hidden />
               <span>Có <b>{formatVnd(stats.deposits.needs_refund)}</b> cọc cần hoàn lại cho khách (đặt chậm hoặc trùng giờ)</span>
             </div>
           )}

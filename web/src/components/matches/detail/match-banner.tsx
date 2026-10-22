@@ -40,7 +40,7 @@ export function MatchBanner({ match, isFull, slotsLeft }: MatchBannerProps) {
             variant="outline"
             className={
               match.status === 'cancelled'
-                ? 'bg-red-500/10 text-red-600 border-red-500/30 text-xs font-bold'
+                ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30 text-xs font-bold'
                 : isFull
                 ? 'bg-muted text-muted-foreground border-border text-xs'
                 : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs font-bold'

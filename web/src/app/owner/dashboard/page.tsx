@@ -132,7 +132,7 @@ export default async function OwnerDashboardPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Đơn Đặt Gần Đây
             </CardTitle>
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
+            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
               <CalendarCheck className="w-4 h-4" />
             </div>
           </CardHeader>
@@ -174,7 +174,7 @@ export default async function OwnerDashboardPage() {
             </CardDescription>
           </div>
           <Link href="/owner/schedule">
-            <Button variant="ghost" size="sm" className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 cursor-pointer">
+            <Button variant="ghost" size="sm" className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer">
               Xem toàn bộ lịch <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </Button>
           </Link>

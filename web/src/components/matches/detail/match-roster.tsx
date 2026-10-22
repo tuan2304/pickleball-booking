@@ -159,7 +159,7 @@ export function MatchRoster({ match, participants, isHost, isFull, loading, onRe
                         variant="outline"
                         disabled={loading}
                         onClick={() => onRespond(p.id, 'rejected')}
-                        className="h-7 text-xs text-red-600 hover:bg-red-500/10 border-red-500/30 cursor-pointer"
+                        className="h-7 text-xs text-red-600 dark:text-red-400 hover:bg-red-500/10 border-red-500/30 cursor-pointer"
                       >
                         <XCircle className="w-3.5 h-3.5 mr-1" />
                         Từ Chối

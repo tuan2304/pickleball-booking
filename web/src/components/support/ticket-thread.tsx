@@ -133,7 +133,7 @@ export function TicketThread({ ticketId, initialMessages, initialStatus, viewer 
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-xs ${
-                  mine ? 'bg-emerald-700 text-white' : m.is_staff ? 'bg-amber-100 text-amber-950 border border-amber-300' : 'bg-card border border-border'
+                  mine ? 'bg-emerald-700 text-white' : m.is_staff ? 'bg-amber-100 text-amber-950 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-100 dark:border-amber-500/40' : 'bg-card border border-border'
                 }`}
               >
                 <div className={`mb-0.5 text-xs font-semibold ${mine ? 'text-emerald-100' : 'text-muted-foreground'}`}>

@@ -159,7 +159,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         )
       case 'booking':
         return (
-          <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
             <Calendar className="w-4 h-4" />
           </div>
         )
@@ -208,7 +208,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm text-foreground">Thông Báo</span>
               {unreadCount > 0 && (
-                <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/20 py-0">
+                <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 py-0">
                   {unreadCount} mới
                 </Badge>
               )}
@@ -219,7 +219,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                 type="button"
                 disabled={loading}
                 onClick={handleMarkAllAsRead}
-                className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
                 Đọc tất cả

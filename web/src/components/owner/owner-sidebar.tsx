@@ -132,7 +132,7 @@ export function OwnerSidebar({ userEmail, userName }: OwnerSidebarProps) {
           <Button
             type="submit"
             variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-red-600 hover:bg-red-500/10 cursor-pointer"
+            className="w-full justify-start text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 cursor-pointer"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Đăng xuất

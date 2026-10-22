@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import Link from 'next/link'
 import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { logout } from '@/app/actions/auth'
@@ -92,6 +93,7 @@ export default async function Home() {
 
           {/* Auth section */}
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             {user ? (
               <div className="flex items-center gap-2 sm:gap-3">
                 <NotificationBell userId={user.id} />
@@ -123,7 +125,7 @@ export default async function Home() {
                     type="submit"
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-muted-foreground hover:text-red-600 cursor-pointer"
+                    className="h-8 w-8 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
                     title="Đăng xuất"
                   aria-label="Đăng xuất"
                   >

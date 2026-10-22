@@ -62,3 +62,11 @@ Icon trang trí thêm `aria-hidden`; nút chỉ có icon bắt buộc có `aria-
 ## Định dạng hiển thị
 Tiền, ngày, giờ **luôn** đi qua `lib/format.ts` (ép múi giờ Việt Nam). Nhãn môn/trình độ lấy từ `lib/constants.ts`.
 Không gọi trực tiếp `toLocaleString`/`toLocaleTimeString` trong component.
+
+## Giao diện sáng / tối
+
+- Nút chuyển ở thanh đầu trang ([theme-toggle.tsx](web/src/components/theme/theme-toggle.tsx)). Chưa tự chọn thì theo cài đặt của hệ điều hành; đã chọn thì nhớ trong `localStorage` (khóa `sa-theme`).
+- Script nhỏ trong `<head>` ([lib/theme.ts](web/src/lib/theme.ts)) đặt class `dark` trước khi vẽ trang nên không bị nháy sáng.
+- Màu dùng biến ngữ nghĩa (`bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`). Bảng màu tối ở `.dark` trong `globals.css`, cùng tông emerald (hue 165) thay vì xám trung tính.
+- Chữ màu đậm trên nền sáng phải có cặp tối: `text-red-600 dark:text-red-400`, `text-emerald-700 dark:text-emerald-400`, `text-amber-700 dark:text-amber-400`. Quy tắc: tương phản chữ thường ≥ 4.5:1 ở cả hai chế độ.
+- Nút vàng (`bg-amber-400 text-slate-900`) và nút xanh (`bg-emerald-700 text-white`) giữ nguyên ở cả hai chế độ. Mã QR luôn đặt trên nền trắng để quét được.

@@ -88,7 +88,7 @@ export function AdminSidebar({ userName, userEmail, openTickets }: AdminSidebarP
           <Home className="w-4 h-4" aria-hidden /> Về trang chủ
         </Link>
         <form action={logout}>
-          <Button type="submit" variant="ghost" className="w-full justify-start text-muted-foreground hover:text-red-600 hover:bg-red-500/10 cursor-pointer">
+          <Button type="submit" variant="ghost" className="w-full justify-start text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 cursor-pointer">
             <LogOut className="w-4 h-4 mr-2" aria-hidden />
             Đăng xuất
           </Button>

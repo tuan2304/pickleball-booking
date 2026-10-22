@@ -302,7 +302,7 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                                 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs font-semibold'
                                 : isPending
                                 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs font-semibold'
-                                : 'bg-red-500/10 text-red-600 border-red-500/30 text-xs'
+                                : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30 text-xs'
                             }
                           >
                             {isAccepted ? '✓ Đã Được Duyệt' : isPending ? '⏳ Chờ Chủ Kèo Duyệt' : 'Đã Bị Từ Chối'}

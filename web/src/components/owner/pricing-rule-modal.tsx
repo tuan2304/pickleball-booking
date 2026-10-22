@@ -62,7 +62,7 @@ export function PricingRuleModal({ courts }: PricingRuleModalProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {error && (
-            <div className="p-3 text-xs bg-red-500/10 border border-red-500/20 text-red-600 rounded-lg">
+            <div className="p-3 text-xs bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-lg">
               {error}
             </div>
           )}

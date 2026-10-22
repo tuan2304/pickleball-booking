@@ -77,7 +77,7 @@ export function MatchActionPanel({
                   variant="outline"
                   disabled={loading}
                   onClick={onCancelMatch}
-                  className="w-full text-xs text-red-600 border-red-500/30 hover:bg-red-500/10 cursor-pointer"
+                  className="w-full text-xs text-red-600 dark:text-red-400 border-red-500/30 hover:bg-red-500/10 cursor-pointer"
                 >
                   Hủy Kèo Ghép
                 </Button>
@@ -97,7 +97,7 @@ export function MatchActionPanel({
                 </div>
               )}
               {userParticipant.status === 'rejected' && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 text-xs text-center font-semibold">
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs text-center font-semibold">
                   Yêu cầu tham gia của bạn đã bị từ chối bởi chủ kèo
                 </div>
               )}
@@ -107,7 +107,7 @@ export function MatchActionPanel({
                   variant="outline"
                   disabled={loading}
                   onClick={onLeave}
-                  className="w-full text-xs text-muted-foreground hover:text-red-600 cursor-pointer"
+                  className="w-full text-xs text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5 mr-1" />
                   Rời khỏi kèo này
