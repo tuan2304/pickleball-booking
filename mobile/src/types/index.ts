@@ -21,6 +21,8 @@ export interface Club {
   ward: string | null
   district: string | null
   city: string | null
+  latitude?: number | null
+  longitude?: number | null
   open_time: string
   close_time: string
   amenities: string[] | null

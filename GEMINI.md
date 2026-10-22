@@ -202,3 +202,7 @@
     - Giao diện: `/owner/payments` (kết nối PayOS, tự đăng ký webhook, xem số dư nền tảng giữ hộ), `/owner/billing` (mua/gia hạn Pro bằng QR), `/admin` (ghi nhận chi trả, cấp gói). Khóa mã hóa AES-256-GCM (`lib/crypto.ts`).
     - Sửa lỗ hổng: layout `/owner` trước đây không kiểm tra vai trò nên người chơi vào được và tạo cụm sân; nay chỉ owner/admin.
     - Kiểm thử: 93 test đơn vị, 66 ca kiểm thử bảo mật DB. Đã đổi mật khẩu ngẫu nhiên 3 tài khoản mẫu trên production (`scripts/secure-seed-accounts.mjs`).
+- **2026-10-22 (Bản đồ Google):**
+    - [lib/maps.ts](web/src/lib/maps.ts): đọc toạ độ từ link Google Maps / toạ độ thuần, dựng URL bản đồ nhúng, xem và chỉ đường. [lib/maps-resolve.ts](web/src/lib/maps-resolve.ts) mở rộng link rút gọn `maps.app.goo.gl` ở server, chỉ đi theo chuyển hướng tới host của Google (chống SSRF).
+    - Chủ sân ghim vị trí lúc tạo cụm sân hoặc bằng nút 'Ghim vị trí' (dán link/toạ độ hoặc dùng vị trí hiện tại, có xem trước). Không cần đổi database: dùng sẵn cột `clubs.latitude/longitude`.
+    - Khách thấy bản đồ nhúng ở trang chi tiết sân và nút 'Chỉ đường' ở danh sách sân, trang kèo, màn hình đặt sân thành công, app mobile. Chưa ghim vị trí thì tìm theo địa chỉ và ghi chú rõ.

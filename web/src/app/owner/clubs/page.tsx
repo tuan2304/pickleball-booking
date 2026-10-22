@@ -5,6 +5,8 @@ import { ClubFormModal } from '@/components/owner/club-form-modal'
 import { CourtFormModal } from '@/components/owner/court-form-modal'
 import { CourtItemActions } from '@/components/owner/court-item-actions'
 import { ClubItemActions } from '@/components/owner/club-item-actions'
+import { ClubLocationButton } from '@/components/owner/club-location-button'
+import { fullAddress, hasCoordinates } from '@/lib/maps'
 import { Building2, MapPin, Clock, CircleDot, ShieldCheck } from 'lucide-react'
 
 import { formatNumber } from '@/lib/format'
@@ -82,6 +84,12 @@ export default async function OwnerClubsPage() {
                         <Clock className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                         <span>{club.open_time?.slice(0, 5)} - {club.close_time?.slice(0, 5)}</span>
                       </div>
+                      <ClubLocationButton
+                        clubId={club.id}
+                        clubName={club.name}
+                        address={fullAddress(club)}
+                        initial={hasCoordinates({ lat: club.latitude, lng: club.longitude }) ? { lat: Number(club.latitude), lng: Number(club.longitude) } : null}
+                      />
                       <CourtFormModal clubId={club.id} clubName={club.name} />
                       <ClubItemActions clubId={club.id} clubName={club.name} />
                     </div>

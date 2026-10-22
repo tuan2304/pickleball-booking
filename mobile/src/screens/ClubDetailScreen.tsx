@@ -12,6 +12,7 @@ import {
 import { colors } from '../theme/colors'
 import { supabase } from '../lib/supabase'
 import { Club, Court } from '../types'
+import { openDirections } from '../lib/maps'
 import {
   MapPin,
   Clock,
@@ -23,6 +24,7 @@ import {
   ShieldCheck,
   ChevronLeft,
   Calendar,
+  Navigation,
 } from 'lucide-react-native'
 
 export default function ClubDetailScreen({ route, navigation }: any) {
@@ -112,6 +114,24 @@ export default function ClubDetailScreen({ route, navigation }: any) {
             </Text>
           </View>
 
+          <TouchableOpacity
+            style={styles.directionsBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Chỉ đường tới sân bằng Google Maps"
+            onPress={async () => {
+              const ok = await openDirections({
+                latitude: club.latitude,
+                longitude: club.longitude,
+                name: club.name,
+                address: `${club.address}, ${club.district ?? ''}, ${club.city ?? ''}`,
+              }).catch(() => false)
+              if (!ok) Alert.alert('Không mở được bản đồ', 'Vui lòng thử lại sau.')
+            }}
+          >
+            <Navigation size={16} color="#fff" />
+            <Text style={styles.directionsText}>Chỉ đường (Google Maps)</Text>
+          </TouchableOpacity>
+
           <View style={styles.infoRow}>
             <Clock size={16} color={colors.accent} />
             <Text style={styles.infoText}>
@@ -197,6 +217,21 @@ export default function ClubDetailScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  directionsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 44,
+    marginVertical: 8,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+  },
+  directionsText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,

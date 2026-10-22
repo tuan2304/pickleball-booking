@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyUser } from '@/lib/notify'
 import { checkCourtAllowance } from '@/lib/club-limits'
+import { requireClubOwner } from '@/lib/auth-guards'
+import { isValidLatLng } from '@/lib/maps'
 
 export async function createClub(formData: FormData) {
   const supabase = await createClient()
@@ -28,6 +30,19 @@ export async function createClub(formData: FormData) {
   const closeTime = formData.get('closeTime') as string || '23:00:00'
   const amenitiesRaw = formData.get('amenities') as string
 
+  // Toạ độ (tùy chọn) do bộ chọn vị trí gửi lên; bỏ trống thì khách thấy bản đồ tìm theo địa chỉ
+  const latRaw = String(formData.get('latitude') ?? '').trim()
+  const lngRaw = String(formData.get('longitude') ?? '').trim()
+  let latitude: number | null = null
+  let longitude: number | null = null
+  if (latRaw || lngRaw) {
+    latitude = Number(latRaw)
+    longitude = Number(lngRaw)
+    if (!isValidLatLng(latitude, longitude)) {
+      return { error: 'Toạ độ vị trí không hợp lệ' }
+    }
+  }
+
   const amenities = amenitiesRaw
     ? amenitiesRaw.split(',').map((item) => item.trim()).filter(Boolean)
     : ['wifi', 'parking', 'shower']
@@ -46,6 +61,8 @@ export async function createClub(formData: FormData) {
     open_time: openTime,
     close_time: closeTime,
     amenities,
+    latitude,
+    longitude,
     images: ['https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800'],
   }).select().single()
 
@@ -261,3 +278,26 @@ export async function deletePricingRule(ruleId: string) {
   return { success: true }
 }
 
+
+/** Ghim hoặc xóa vị trí bản đồ của cụm sân (lat/lng = null để xóa). */
+export async function updateClubLocation(clubId: string, lat: number | null, lng: number | null) {
+  const auth = await requireClubOwner(clubId)
+  if ('error' in auth) return { error: auth.error }
+
+  const clearing = lat === null && lng === null
+  if (!clearing && (lat === null || lng === null || !isValidLatLng(lat, lng))) {
+    return { error: 'Toạ độ vị trí không hợp lệ' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('clubs').update({ latitude: lat, longitude: lng }).eq('id', clubId)
+  if (error) {
+    console.error('updateClubLocation lỗi', error)
+    return { error: 'Không lưu được vị trí. Vui lòng thử lại.' }
+  }
+
+  revalidatePath('/owner/clubs')
+  revalidatePath('/clubs')
+  revalidatePath(`/clubs/${clubId}`)
+  return { success: true }
+}

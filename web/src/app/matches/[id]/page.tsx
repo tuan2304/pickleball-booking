@@ -50,7 +50,10 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
             id,
             name,
             address,
-            district
+            district,
+            city,
+            latitude,
+            longitude
           )
         )
       )

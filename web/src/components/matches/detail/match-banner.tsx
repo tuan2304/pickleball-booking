@@ -4,6 +4,8 @@ import { Clock, MapPin } from 'lucide-react'
 import { sportLabel, skillInfo } from '@/lib/constants'
 import { SportIcon } from '@/components/ui/sport-icon'
 import { formatTime, formatLongDate } from '@/lib/format'
+import { DirectionsLinks } from '@/components/maps/directions-links'
+import { fullAddress } from '@/lib/maps'
 import type { MatchDetail } from './types'
 
 interface MatchBannerProps {
@@ -92,6 +94,13 @@ export function MatchBanner({ match, isFull, slotsLeft }: MatchBannerProps) {
             <div className="text-xs text-muted-foreground line-clamp-1">
               {club?.address || club?.district || 'Hồ Chí Minh'}
             </div>
+            {club && (
+              <DirectionsLinks
+                compact
+                className="pt-1"
+                place={{ lat: club.latitude, lng: club.longitude, name: club.name, address: fullAddress(club) }}
+              />
+            )}
           </div>
         </div>
       </CardContent>

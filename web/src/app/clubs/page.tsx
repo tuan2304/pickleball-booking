@@ -6,6 +6,8 @@ import { ClubFilters } from '@/components/clubs/club-filters'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RemoteImage } from '@/components/ui/remote-image'
+import { DirectionsLinks } from '@/components/maps/directions-links'
+import { fullAddress } from '@/lib/maps'
 import { Button } from '@/components/ui/button'
 import { MapPin, Clock, ArrowRight, Trophy, Sparkles } from 'lucide-react'
 
@@ -148,6 +150,11 @@ export default async function ClubsPage({ searchParams }: ClubsPageProps) {
                             <MapPin className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
                             <span className="truncate">{club.address}, {club.district}</span>
                           </p>
+                          <DirectionsLinks
+                            compact
+                            className="mt-1.5"
+                            place={{ lat: club.latitude, lng: club.longitude, name: club.name, address: fullAddress(club) }}
+                          />
                         </div>
 
                         {/* Sport types badges */}

@@ -191,6 +191,18 @@ where id = (select id from auth.users where email = 'EMAIL_CUA_BAN');
 - Từ ngày bắt đầu: gói Free tối đa 2 sân con đang hoạt động; sân thứ 3 trở đi không nhận đặt cho đến khi nâng Pro. Sân không bị xóa.
 - Chủ sân trả thuê bao qua QR của **kênh PayOS nền tảng**; webhook tự gia hạn. Có thể cấp thủ công ở `/admin`.
 
+## 🗺️ Bản đồ Google và chỉ đường
+
+Khách thấy bản đồ nhúng ở trang cụm sân, nút **Chỉ đường** ở danh sách sân, trang kèo, màn hình đặt sân thành công và app mobile. Nút này mở app Google Maps trên điện thoại (hoặc web) với điểm đến là sân, đường đi tính từ vị trí hiện tại của khách.
+
+- **Không cần làm gì để chạy:** không có API key thì bản đồ vẫn hiện (dạng nhúng không cần khóa) và nút chỉ đường dùng link chính thức của Google Maps.
+- **Chủ sân ghim vị trí:** `Cụm sân & Sân con` → nút **Ghim vị trí** (hoặc ngay lúc tạo cụm sân). Có 3 cách: dán link Google Maps (kể cả link rút gọn `maps.app.goo.gl`), dán toạ độ `10.7769, 106.7009`, hoặc bấm **Dùng vị trí hiện tại** khi đang đứng ở sân. Chưa ghim thì bản đồ tìm theo địa chỉ và có thể lệch.
+- **Nên có API key (miễn phí):** dùng Maps Embed API chính thức, ổn định hơn dạng nhúng không khóa.
+  1. Vào [Google Cloud Console](https://console.cloud.google.com), tạo project, bật **Maps Embed API**.
+  2. Tạo **API key**, trong phần *Application restrictions* chọn **HTTP referrers** và chỉ cho phép tên miền web của bạn (vd `https://ten-mien-cua-ban.vn/*`), *API restrictions* chọn riêng **Maps Embed API**.
+  3. Thêm biến `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` trên Vercel rồi Redeploy. (Khóa này hiển thị công khai trong trang web nên bắt buộc phải giới hạn theo tên miền.)
+- Các cụm sân có sẵn chưa có toạ độ; chủ sân cần vào ghim, hoặc bạn cập nhật `clubs.latitude/longitude` trong database.
+
 ## 🔒 Kiểm tra & Bảo mật sau khi Triển khai:
 1. **Webhook:** gửi thử `POST /api/payos/webhook` với body `{"orderCode": 1}` → phải nhận **401** (webhook chỉ chấp nhận payload có chữ ký PayOS hợp lệ).
 2. **Thanh toán thật:** đặt một khung giờ, quét QR chuyển khoản số tiền nhỏ → trang tự chuyển "Thành công" và chủ sân nhận chuông thông báo. Trên production **không có** nút giả lập thanh toán.

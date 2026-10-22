@@ -43,6 +43,7 @@
 | Mỗi chủ sân dùng PayOS riêng (GĐ 11) | ✅ Code xong | Chờ `supabase db push` + biến `PAYMENT_SETTINGS_ENCRYPTION_KEY` |
 | Thuê bao Free/Pro (GĐ 12) | ✅ Code xong | Đang miễn phí đến khi đặt `BILLING_ENFORCED_FROM`; giá `PRO_PLAN_PRICE_VND` cần bạn quyết định |
 | Sổ đối soát khi nền tảng thu hộ | ✅ Code xong | `/admin`; không tự chuyển tiền thật, bạn chuyển rồi ghi nhận |
+| Bản đồ Google + chỉ đường | ✅ Đã làm | Không cần khóa để chạy; nên thêm `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (giới hạn theo tên miền). Các sân có sẵn cần chủ sân ghim vị trí |
 | Chính sách hủy/hoàn cọc | ⏳ Chưa làm | Cần bạn quyết định (hủy trước bao lâu, hoàn bao nhiêu %) |
 | P3 (hồ sơ người dùng, hoàn tiền, ảnh sân, mobile đặt sân...) | ⏳ Chưa làm | Cần xác nhận nghiệp vụ trước |
 

@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 
 import { bankNameFromBin } from '@/lib/banks'
+import { DirectionsLinks } from '@/components/maps/directions-links'
+import { fullAddress } from '@/lib/maps'
 import { formatVnd, formatTime, formatDate } from '@/lib/format'
 export interface BookingPaymentViewProps {
   booking: {
@@ -56,6 +58,10 @@ export interface BookingPaymentViewProps {
   club: {
     name: string
     address: string
+    district?: string | null
+    city?: string | null
+    latitude?: number | null
+    longitude?: number | null
   }
 }
 
@@ -216,6 +222,10 @@ export function BookingPaymentView({
               </span>
             </div>
           </div>
+
+          <DirectionsLinks
+            place={{ lat: club.latitude, lng: club.longitude, name: club.name, address: fullAddress(club) }}
+          />
 
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Link href="/my-bookings" className="flex-1">

@@ -33,6 +33,9 @@ export interface MatchDetail {
         name: string
         address: string | null
         district: string | null
+        city?: string | null
+        latitude?: number | null
+        longitude?: number | null
       } | null
     } | null
   } | null

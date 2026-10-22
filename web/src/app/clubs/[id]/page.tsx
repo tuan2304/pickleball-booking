@@ -8,6 +8,9 @@ import { getClubReviews } from '@/app/actions/reviews'
 import { Badge } from '@/components/ui/badge'
 import { RemoteImage } from '@/components/ui/remote-image'
 import { canAcceptBookings } from '@/lib/payment-channel'
+import { MapEmbed } from '@/components/maps/map-embed'
+import { DirectionsLinks } from '@/components/maps/directions-links'
+import { fullAddress, hasCoordinates } from '@/lib/maps'
 import { bookableCourtIds, courtLimit, isBillingEnforced } from '@/lib/billing'
 import { MapPin, Clock, ArrowLeft, Sparkles } from 'lucide-react'
 
@@ -74,6 +77,9 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
   const acceptsPayments = canAcceptBookings(club.accepts_online_payment)
 
   const courtIds = bookableCourts.map((c) => c.id)
+
+  const mapPlace = { lat: club.latitude, lng: club.longitude, name: club.name, address: fullAddress(club) }
+  const isPinned = hasCoordinates(mapPlace)
 
   // 3. Lấy bookings của các sân con này
   let existingBookings: Array<{
@@ -171,6 +177,31 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
             </div>
           </div>
         </div>
+
+        {/* Vị trí & chỉ đường */}
+        <section
+          aria-labelledby="club-location-title"
+          className="grid md:grid-cols-5 rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
+        >
+          <div className="md:col-span-2 p-6 space-y-4">
+            <h2 id="club-location-title" className="text-xl font-extrabold text-foreground tracking-tight">
+              Vị trí &amp; chỉ đường
+            </h2>
+            <p className="flex items-start gap-2 text-sm text-foreground">
+              <MapPin className="w-4 h-4 mt-0.5 text-emerald-700 dark:text-emerald-400 shrink-0" aria-hidden />
+              {mapPlace.address}
+            </p>
+            {!isPinned && (
+              <p className="text-xs text-muted-foreground">
+                Chủ sân chưa ghim vị trí chính xác nên bản đồ tìm theo địa chỉ và có thể lệch một chút.
+              </p>
+            )}
+            <DirectionsLinks place={mapPlace} />
+          </div>
+          <div className="md:col-span-3">
+            <MapEmbed place={mapPlace} title={`Bản đồ vị trí ${club.name}`} className="h-72 md:h-full md:min-h-72" />
+          </div>
+        </section>
 
         {/* Booking Slot Picker Section */}
         <div className="pt-2">

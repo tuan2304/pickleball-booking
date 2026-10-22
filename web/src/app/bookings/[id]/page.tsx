@@ -31,7 +31,11 @@ export default async function BookingPage({ params }: BookingPageProps) {
         club:clubs (
           id,
           name,
-          address
+          address,
+          district,
+          city,
+          latitude,
+          longitude
         )
       ),
       payments (*)

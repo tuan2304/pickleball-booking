@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Plus, Loader2 } from 'lucide-react'
+import { LocationPicker } from '@/components/maps/location-picker'
 
 export function ClubFormModal() {
   const [open, setOpen] = useState(false)
@@ -48,7 +49,7 @@ export function ClubFormModal() {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Thêm Cụm Sân Thể Thao</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
@@ -127,6 +128,11 @@ export function ClubFormModal() {
                 className="h-9"
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5 pt-1">
+            <Label>Vị trí trên bản đồ (nên ghim để khách chỉ đường chính xác)</Label>
+            <LocationPicker />
           </div>
 
           <div className="space-y-1.5">
