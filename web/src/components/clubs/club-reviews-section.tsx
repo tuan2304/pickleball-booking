@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Star, MessageSquare, ThumbsUp, Send } from 'lucide-react'
 
 import { formatDate } from '@/lib/format'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 interface ClubReviewsSectionProps {
   clubId: string
   currentUserId?: string | null
@@ -20,6 +22,7 @@ export function ClubReviewsSection({
   currentUserId,
   initialReviews,
 }: ClubReviewsSectionProps) {
+  const router = useRouter()
   const [reviews, setReviews] = useState<ClubReview[]>(initialReviews)
   const [rating, setRating] = useState<number>(5)
   const [hoverRating, setHoverRating] = useState<number>(0)
@@ -90,7 +93,9 @@ export function ClubReviewsSection({
   async function handleSubmitReview(e: React.FormEvent) {
     e.preventDefault()
     if (!currentUserId) {
-      alert('Vui lòng đăng nhập để gửi đánh giá!')
+      toast.info('Vui lòng đăng nhập để gửi đánh giá', {
+        action: { label: 'Đăng nhập', onClick: () => router.push('/login') },
+      })
       return
     }
 
@@ -101,7 +106,7 @@ export function ClubReviewsSection({
     setSubmitting(false)
 
     if (res.error) {
-      alert(res.error)
+      toast.warning(res.error)
     } else {
       setSuccessMsg('Cảm ơn bạn đã gửi đánh giá cho cụm sân!')
       setComment('')

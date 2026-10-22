@@ -5,6 +5,8 @@ import { toggleCourtStatus, deleteCourt } from '@/app/actions/owner'
 import { Button } from '@/components/ui/button'
 import { Power, Trash2, Loader2 } from 'lucide-react'
 
+import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 interface CourtItemActionsProps {
   courtId: string
   isActive: boolean
@@ -12,21 +14,29 @@ interface CourtItemActionsProps {
 
 export function CourtItemActions({ courtId, isActive }: CourtItemActionsProps) {
   const [loading, setLoading] = useState(false)
+  const askConfirm = useConfirm()
 
   async function handleToggle() {
     setLoading(true)
     const res = await toggleCourtStatus(courtId, !isActive)
     setLoading(false)
-    if (res?.error) alert(res.error)
+    if (res?.error) toast.error(res.error)
+    else toast.success(isActive ? 'Đã tạm ngưng sân' : 'Đã kích hoạt sân')
   }
 
   async function handleDelete() {
-    if (confirm('Bạn có chắc chắn muốn xóa sân con này? Chỉ xóa được sân chưa có đơn đặt nào; nếu đã có, hãy chọn Tạm ngưng.')) {
-      setLoading(true)
-      const res = await deleteCourt(courtId)
-      setLoading(false)
-      if (res?.error) alert(res.error)
-    }
+    const ok = await askConfirm({
+      title: 'Xóa sân con này?',
+      description: 'Chỉ xóa được sân chưa có đơn đặt nào. Nếu đã có, hãy chọn Tạm ngưng.',
+      confirmText: 'Xóa sân',
+      destructive: true,
+    })
+    if (!ok) return
+    setLoading(true)
+    const res = await deleteCourt(courtId)
+    setLoading(false)
+    if (res?.error) toast.error(res.error)
+    else toast.success('Đã xóa sân con')
   }
 
   return (

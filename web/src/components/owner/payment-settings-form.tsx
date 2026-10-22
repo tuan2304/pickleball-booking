@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, Loader2, Plug, Unplug, AlertCircle } from 'lucide-react'
 import { removePaymentSettings, savePaymentSettings } from '@/app/actions/payment-settings'
 
+import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 interface PaymentSettingsFormProps {
   clubId: string
   clubName: string
@@ -19,6 +21,7 @@ interface PaymentSettingsFormProps {
 
 export function PaymentSettingsForm({ clubId, clubName, connected, clientId, verifiedAt }: PaymentSettingsFormProps) {
   const [pending, startTransition] = useTransition()
+  const askConfirm = useConfirm()
   const [form, setForm] = useState({ clientId: '', apiKey: '', checksumKey: '' })
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const [isConnected, setIsConnected] = useState(connected)
@@ -36,6 +39,7 @@ export function PaymentSettingsForm({ clubId, clubName, connected, clientId, ver
         setMessage({ type: 'error', text: res.error })
         return
       }
+      toast.success('Đã kết nối PayOS thành công')
       setIsConnected(true)
       setSavedClientId(form.clientId.trim())
       setForm({ clientId: '', apiKey: '', checksumKey: '' })
@@ -48,8 +52,14 @@ export function PaymentSettingsForm({ clubId, clubName, connected, clientId, ver
     })
   }
 
-  function handleRemove() {
-    if (!confirm(`Ngắt kết nối PayOS của "${clubName}"? Cụm sân sẽ không nhận đặt online cho đến khi kết nối lại.`)) return
+  async function handleRemove() {
+    const ok = await askConfirm({
+      title: `Ngắt kết nối PayOS của "${clubName}"?`,
+      description: 'Cụm sân sẽ không nhận đặt sân online cho đến khi bạn kết nối lại.',
+      confirmText: 'Ngắt kết nối',
+      destructive: true,
+    })
+    if (!ok) return
     setMessage(null)
     startTransition(async () => {
       const res = await removePaymentSettings(clubId)
@@ -60,6 +70,7 @@ export function PaymentSettingsForm({ clubId, clubName, connected, clientId, ver
       setIsConnected(false)
       setSavedClientId(null)
       setMessage({ type: 'success', text: 'Đã ngắt kết nối.' })
+      toast.success('Đã ngắt kết nối PayOS')
     })
   }
 

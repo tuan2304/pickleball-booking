@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { MessageSquare, Send } from 'lucide-react'
 
 import { formatTime } from '@/lib/format'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 interface MatchChatBoxProps {
   matchId: string
   currentUserId?: string
@@ -19,6 +21,7 @@ export function MatchChatBox({
   currentUserId,
   initialMessages,
 }: MatchChatBoxProps) {
+  const router = useRouter()
   const [messages, setMessages] = useState<MatchMessage[]>(initialMessages)
   const [inputMessage, setInputMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -94,7 +97,9 @@ export function MatchChatBox({
     if (!inputMessage.trim() || sending) return
 
     if (!currentUserId) {
-      alert('Vui lòng đăng nhập để tham gia trò chuyện cùng anh em!')
+      toast.info('Vui lòng đăng nhập để tham gia trò chuyện', {
+        action: { label: 'Đăng nhập', onClick: () => router.push('/login') },
+      })
       return
     }
 
@@ -106,7 +111,7 @@ export function MatchChatBox({
     setSending(false)
 
     if (res.error) {
-      alert(res.error)
+      toast.error(res.error)
     }
   }
 

@@ -5,6 +5,8 @@ import { deletePricingRule } from '@/app/actions/owner'
 import { Button } from '@/components/ui/button'
 import { Trash2, Loader2 } from 'lucide-react'
 
+import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 interface PricingRuleActionsProps {
   ruleId: string
   ruleName: string
@@ -12,13 +14,21 @@ interface PricingRuleActionsProps {
 
 export function PricingRuleActions({ ruleId, ruleName }: PricingRuleActionsProps) {
   const [loading, setLoading] = useState(false)
+  const askConfirm = useConfirm()
 
   async function handleDelete() {
-    if (confirm(`Bạn có chắc chắn muốn xóa khung giá "${ruleName}"?`)) {
-      setLoading(true)
-      await deletePricingRule(ruleId)
-      setLoading(false)
-    }
+    const ok = await askConfirm({
+      title: `Xóa khung giá "${ruleName}"?`,
+      description: 'Các đơn đặt mới sẽ dùng giá cơ bản của sân thay cho khung giá này.',
+      confirmText: 'Xóa khung giá',
+      destructive: true,
+    })
+    if (!ok) return
+    setLoading(true)
+    const res = await deletePricingRule(ruleId)
+    setLoading(false)
+    if (res?.error) toast.error(res.error)
+    else toast.success('Đã xóa khung giá')
   }
 
   return (

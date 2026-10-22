@@ -5,6 +5,8 @@ import { deleteClub } from '@/app/actions/owner'
 import { Button } from '@/components/ui/button'
 import { Trash2, Loader2 } from 'lucide-react'
 
+import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 interface ClubItemActionsProps {
   clubId: string
   clubName: string
@@ -12,14 +14,21 @@ interface ClubItemActionsProps {
 
 export function ClubItemActions({ clubId, clubName }: ClubItemActionsProps) {
   const [loading, setLoading] = useState(false)
+  const askConfirm = useConfirm()
 
   async function handleDelete() {
-    if (confirm(`Bạn có chắc chắn muốn xóa cụm sân "${clubName}"? Chỉ xóa được cụm sân chưa có đơn đặt hay giao dịch nào.`)) {
-      setLoading(true)
-      const res = await deleteClub(clubId)
-      setLoading(false)
-      if (res?.error) alert(res.error)
-    }
+    const ok = await askConfirm({
+      title: `Xóa cụm sân "${clubName}"?`,
+      description: 'Chỉ xóa được cụm sân chưa có đơn đặt hay giao dịch nào. Nếu đã có, hãy tạm ngưng hoạt động thay vì xóa.',
+      confirmText: 'Xóa cụm sân',
+      destructive: true,
+    })
+    if (!ok) return
+    setLoading(true)
+    const res = await deleteClub(clubId)
+    setLoading(false)
+    if (res?.error) toast.error(res.error)
+    else toast.success('Đã xóa cụm sân')
   }
 
   return (

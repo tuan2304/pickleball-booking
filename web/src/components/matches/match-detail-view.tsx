@@ -14,6 +14,8 @@ import { MatchActionPanel } from '@/components/matches/detail/match-action-panel
 import { JoinRequestDialog } from '@/components/matches/detail/join-request-dialog'
 import type { MatchDetail, MatchParticipantItem, MatchMessage } from '@/components/matches/detail/types'
 
+import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 export interface MatchDetailProps {
   match: MatchDetail
   participants: MatchParticipantItem[]
@@ -28,6 +30,7 @@ export function MatchDetailView({
   currentUserId,
 }: MatchDetailProps) {
   const router = useRouter()
+  const askConfirm = useConfirm()
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
   const [joinMessage, setJoinMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -75,7 +78,9 @@ export function MatchDetailView({
 
     if (res?.error) {
       setActionError(res.error)
+      toast.error(res.error)
     } else {
+      toast.success('Đã gửi yêu cầu tham gia', { description: 'Chủ kèo sẽ duyệt và báo cho bạn.' })
       setIsJoinModalOpen(false)
       setJoinMessage('')
       router.refresh()
@@ -91,13 +96,22 @@ export function MatchDetailView({
 
     if (res?.error) {
       setActionError(res.error)
+      toast.error(res.error)
     } else {
+      toast.success(status === 'accepted' ? 'Đã duyệt thành viên' : 'Đã từ chối yêu cầu')
       router.refresh()
     }
   }
 
   async function handleLeave() {
-    if (!confirm('Bạn có chắc chắn muốn rời khỏi kèo này?')) return
+    const ok = await askConfirm({
+      title: 'Rời khỏi kèo này?',
+      description: 'Bạn sẽ mất chỗ trong kèo và phải xin tham gia lại nếu muốn quay lại.',
+      confirmText: 'Rời kèo',
+      cancelText: 'Ở lại',
+      destructive: true,
+    })
+    if (!ok) return
 
     setLoading(true)
     setActionError(null)
@@ -107,13 +121,22 @@ export function MatchDetailView({
 
     if (res?.error) {
       setActionError(res.error)
+      toast.error(res.error)
     } else {
+      toast.success('Đã rời khỏi kèo')
       router.refresh()
     }
   }
 
   async function handleCancelMatch() {
-    if (!confirm('Bạn có chắc chắn muốn hủy kèo này? Các thành viên sẽ nhận được thông báo.')) return
+    const ok = await askConfirm({
+      title: 'Hủy kèo này?',
+      description: 'Các thành viên đã được duyệt sẽ nhận thông báo kèo bị hủy. Thao tác này không hoàn tác được.',
+      confirmText: 'Hủy kèo',
+      cancelText: 'Giữ lại',
+      destructive: true,
+    })
+    if (!ok) return
 
     setLoading(true)
     setActionError(null)
@@ -123,7 +146,9 @@ export function MatchDetailView({
 
     if (res?.error) {
       setActionError(res.error)
+      toast.error(res.error)
     } else {
+      toast.success('Đã hủy kèo')
       router.refresh()
     }
   }
