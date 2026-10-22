@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 
 import { formatVnd, formatTime, formatDate } from '@/lib/format'
+import { addDaysToDateKey, vnDateKey } from '@/lib/datetime'
+import { vnHourSpan } from '@/lib/booking-slots'
 interface ScheduleCourt {
   id: string
   name: string
@@ -54,9 +56,8 @@ const TIME_SLOTS = [
 export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
   const router = useRouter()
   const [viewMode, setViewMode] = useState<'timeline' | 'table'>('timeline')
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  )
+  // Ngày theo giờ Việt Nam (toISOString() trả ngày UTC nên sai trước 7h sáng)
+  const [selectedDate, setSelectedDate] = useState<string>(() => vnDateKey(Date.now()))
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [isLive, setIsLive] = useState(false)
@@ -90,15 +91,12 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
 
   // Thay đổi ngày
   function changeDate(days: number) {
-    const current = new Date(selectedDate)
-    current.setDate(current.getDate() + days)
-    setSelectedDate(current.toISOString().split('T')[0])
+    setSelectedDate(addDaysToDateKey(selectedDate, days))
   }
 
   // Lọc bookings theo ngày được chọn
   const dayBookings = initialBookings.filter((b) => {
-    const bDate = new Date(b.start_time).toISOString().split('T')[0]
-    return bDate === selectedDate
+    return vnDateKey(new Date(b.start_time)) === selectedDate
   })
 
   // Lọc theo trạng thái cho chế độ xem bảng
@@ -152,7 +150,7 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+            onClick={() => setSelectedDate(vnDateKey(Date.now()))}
             className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 cursor-pointer"
           >
             Hôm nay
@@ -267,15 +265,12 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
                       // Tìm booking trùng với giờ này
                       const booking = dayBookings.find((b) => {
                         if (b.court_id !== court.id) return false
-                        const bStart = new Date(b.start_time)
-                        const bEnd = new Date(b.end_time)
-                        const startHour = bStart.getHours()
-                        const endHour = bEnd.getHours()
+                        const { startHour, endHour } = vnHourSpan(b.start_time, b.end_time)
                         return slotHour >= startHour && slotHour < endHour
                       })
 
                       const isFirstHour =
-                        booking && new Date(booking.start_time).getHours() === slotHour
+                        booking && vnHourSpan(booking.start_time, booking.end_time).startHour === slotHour
 
                       return (
                         <div

@@ -1,4 +1,4 @@
-import { vnDateTime } from '@/lib/datetime'
+import { getVnParts, vnDateTime } from '@/lib/datetime'
 
 export interface BusySlot {
   court_id: string
@@ -52,4 +52,17 @@ export function isDurationAvailable(args: {
   const start = vnDateTime(dateKey, startHour)
   const end = new Date(start.getTime() + duration * 60 * 60 * 1000)
   return !overlapsBusy(busy, courtId, start, end)
+}
+
+/**
+ * Các ô giờ (giờ VN) mà một đơn chiếm: từ `startHour` đến TRƯỚC `endHour`.
+ * Đơn kết thúc 19:30 chiếm đến hết ô 19:00 (endHour = 20); kết thúc đúng 00:00 hôm sau tính là 24.
+ */
+export function vnHourSpan(startISO: string, endISO: string): { startHour: number; endHour: number } {
+  const start = getVnParts(new Date(startISO))
+  const end = getVnParts(new Date(endISO))
+  const startHour = Math.floor(start.minutesOfDay / 60)
+  const sameDay = start.dateKey === end.dateKey
+  const endMinutes = sameDay ? end.minutesOfDay : 24 * 60
+  return { startHour, endHour: Math.ceil(endMinutes / 60) }
 }

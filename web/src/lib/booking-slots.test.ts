@@ -5,6 +5,7 @@ import {
   isHourBooked,
   isHourPast,
   overlapsBusy,
+  vnHourSpan,
   type BusySlot,
 } from './booking-slots'
 import { vnDateTime } from './datetime'
@@ -87,5 +88,21 @@ describe('isDurationAvailable', () => {
     const list = [busy([20, 0], [21, 0])]
     expect(isDurationAvailable({ ...base, busy: list, startHour: 18, duration: 2 })).toBe(true)
     expect(isDurationAvailable({ ...base, busy: list, startHour: 18, duration: 2.5 })).toBe(false)
+  })
+})
+
+describe('vnHourSpan', () => {
+  it('tính theo giờ VN dù máy chạy UTC', () => {
+    // 18:00-20:00 VN = 11:00-13:00 UTC
+    expect(vnHourSpan('2026-10-23T11:00:00Z', '2026-10-23T13:00:00Z')).toEqual({ startHour: 18, endHour: 20 })
+  })
+
+  it('đơn kết thúc 19:30 chiếm hết ô 19:00', () => {
+    expect(vnHourSpan('2026-10-23T11:00:00Z', '2026-10-23T12:30:00Z')).toEqual({ startHour: 18, endHour: 20 })
+  })
+
+  it('kết thúc đúng 00:00 hôm sau tính là 24', () => {
+    // 22:00 VN -> 00:00 VN hôm sau
+    expect(vnHourSpan('2026-10-23T15:00:00Z', '2026-10-23T17:00:00Z')).toEqual({ startHour: 22, endHour: 24 })
   })
 })

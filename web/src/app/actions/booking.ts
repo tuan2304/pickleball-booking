@@ -7,6 +7,7 @@ import { createPaymentLink, isPaymentSimulationEnabled, PaymentGatewayError } fr
 import { settlePayment } from '@/lib/payments'
 import { computePrice } from '@/lib/pricing'
 import { getVnParts } from '@/lib/datetime'
+import { resolveAppUrl } from '@/lib/app-url'
 
 import { isMatchSkill } from '@/lib/constants'
 export interface MatchConfig {
@@ -211,7 +212,7 @@ export async function createBooking(
     return { error: 'Không thể khởi tạo thanh toán. Vui lòng thử lại.' }
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const appUrl = resolveAppUrl()
   let paymentLink
   try {
     paymentLink = await createPaymentLink({

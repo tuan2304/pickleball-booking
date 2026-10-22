@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "db:types": "supabase gen types typescript --linked --workdir .. > src/types/supabase.generated.ts",
     "db:test": "bash ../supabase/tests/run.sh",
-    "check": "npm run typecheck && npm run lint && npm test"
+    "check": "npm run typecheck && npm run lint && npm test",
+    "payos:webhook": "node --env-file=.env.local scripts/register-payos-webhook.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
