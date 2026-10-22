@@ -32,7 +32,9 @@ export async function updateSession(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  await supabase.auth.getUser()
+  // getClaims() kiểm tra chữ ký JWT tại chỗ (không cần gọi Supabase Auth ở Singapore) khi project
+  // dùng JWT signing keys bất đối xứng; nếu vẫn dùng khóa HS256 cũ thì tự rơi về gọi Auth server.
+  await supabase.auth.getClaims()
 
   return supabaseResponse
 }

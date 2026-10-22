@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -37,8 +37,8 @@ const STEPS = [
 ]
 
 export default async function Home() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await getSupabase()
+  const user = await getCurrentUser()
 
   let profile = null
   if (user) {

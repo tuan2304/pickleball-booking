@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { LoginForm } from '@/components/auth/login-form'
 import { Metadata } from 'next'
 
@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 }
 
 export default async function LoginPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await getSupabase()
+  const user = await getCurrentUser()
 
   // Nếu đã đăng nhập, điều hướng về trang chủ
   if (user) {

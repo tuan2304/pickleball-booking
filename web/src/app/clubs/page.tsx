@@ -6,6 +6,7 @@ import { MainHeader } from '@/components/layout/main-header'
 import { ClubFilters } from '@/components/clubs/club-filters'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { RemoteImage } from '@/components/ui/remote-image'
 import { Button } from '@/components/ui/button'
 import { MapPin, Clock, ArrowRight, ShieldCheck, Trophy, Sparkles } from 'lucide-react'
 
@@ -125,10 +126,11 @@ export default async function ClubsPage({ searchParams }: ClubsPageProps) {
                     <div>
                       {/* Image Preview */}
                       <div className="relative h-48 w-full bg-muted overflow-hidden">
-                        <img
+                        <RemoteImage
                           src={imageSrc}
                           alt={club.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                          sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                          className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                         />
                         <div className="absolute top-3 right-3">
                           <Badge className="bg-background/90 text-foreground backdrop-blur-md border border-border/60 text-xs font-semibold shadow-xs">

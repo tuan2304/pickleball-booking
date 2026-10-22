@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { MainHeader } from '@/components/layout/main-header'
 import { MatchDetailView } from '@/components/matches/match-detail-view'
 import { getMatchMessages } from '@/app/actions/chat'
@@ -12,8 +12,8 @@ interface MatchDetailPageProps {
 
 export default async function MatchDetailPage({ params }: MatchDetailPageProps) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await getSupabase()
+  const user = await getCurrentUser()
 
   // 1. Fetch match details
   const { data: match, error } = await supabase
@@ -62,27 +62,27 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
     notFound()
   }
 
-  // 2. Fetch participants
-  const { data: participants } = await supabase
-    .from('match_participants')
-    .select(`
-      id,
-      user_id,
-      status,
-      message,
-      joined_at,
-      user:profiles (
+  // Thành viên và tin nhắn không phụ thuộc nhau → lấy đồng thời
+  const [{ data: participants }, initialMessages] = await Promise.all([
+    supabase
+      .from('match_participants')
+      .select(`
         id,
-        full_name,
-        avatar_url,
-        skill_level
-      )
-    `)
-    .eq('match_id', id)
-    .order('joined_at', { ascending: true })
-
-  // 3. Fetch initial messages for live chat
-  const initialMessages = await getMatchMessages(id)
+        user_id,
+        status,
+        message,
+        joined_at,
+        user:profiles (
+          id,
+          full_name,
+          avatar_url,
+          skill_level
+        )
+      `)
+      .eq('match_id', id)
+      .order('joined_at', { ascending: true }),
+    getMatchMessages(id),
+  ])
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">

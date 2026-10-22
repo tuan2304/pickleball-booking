@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { MainHeader } from '@/components/layout/main-header'
 import { MyBookingsView } from '@/components/booking/my-bookings-view'
 
 export default async function MyBookingsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await getSupabase()
+  const user = await getCurrentUser()
 
   if (!user) {
     redirect('/login?next=/my-bookings')

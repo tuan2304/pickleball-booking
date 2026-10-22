@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { MainHeader } from '@/components/layout/main-header'
 import { TimeSlotPicker } from '@/components/booking/time-slot-picker'
 import { ClubReviewsSection } from '@/components/clubs/club-reviews-section'
 import { getClubReviews } from '@/app/actions/reviews'
 import { Badge } from '@/components/ui/badge'
+import { RemoteImage } from '@/components/ui/remote-image'
 import { Button } from '@/components/ui/button'
 import { MapPin, Clock, ArrowLeft, ShieldCheck, Trophy, Sparkles } from 'lucide-react'
 
@@ -17,35 +18,32 @@ interface ClubDetailPageProps {
 
 export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await getSupabase()
+  const user = await getCurrentUser()
 
-  // 1. Lấy thông tin cụm sân
-  const { data: club } = await supabase
-    .from('clubs')
-    .select('*')
-    .eq('id', id)
-    .single()
+  // Cụm sân, sân con và đánh giá không phụ thuộc nhau → lấy đồng thời (mỗi lượt đi về tới Singapore tốn 0,3 - 1 giây)
+  const [{ data: club }, { data: courts }, initialReviews] = await Promise.all([
+    supabase.from('clubs').select('*').eq('id', id).single(),
+    supabase
+      .from('courts')
+      .select(`
+        id,
+        name,
+        sport_type,
+        surface_type,
+        base_price_per_hour,
+        deposit_percentage,
+        is_active,
+        court_pricing_rules (*)
+      `)
+      .eq('club_id', id)
+      .eq('is_active', true),
+    getClubReviews(id),
+  ])
 
   if (!club) {
     notFound()
   }
-
-  // 2. Lấy danh sách sân con & bảng giá linh hoạt
-  const { data: courts } = await supabase
-    .from('courts')
-    .select(`
-      id,
-      name,
-      sport_type,
-      surface_type,
-      base_price_per_hour,
-      deposit_percentage,
-      is_active,
-      court_pricing_rules (*)
-    `)
-    .eq('club_id', id)
-    .eq('is_active', true)
 
   const courtList = (courts || []).map((c: any) => ({
     id: c.id,
@@ -90,9 +88,6 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
     }))
   }
 
-  // 4. Lấy danh sách reviews ban đầu
-  const initialReviews = await getClubReviews(id)
-
   const imageSrc =
     club.images && club.images[0]
       ? club.images[0]
@@ -116,10 +111,12 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
         {/* Club Hero Banner */}
         <div className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-sm">
           <div className="h-64 sm:h-80 w-full relative">
-            <img
+            <RemoteImage
               src={imageSrc}
               alt={club.name}
-              className="w-full h-full object-cover"
+              sizes="(min-width: 1280px) 1200px, 100vw"
+              priority
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
             <div className="absolute top-4 left-4 flex gap-2">

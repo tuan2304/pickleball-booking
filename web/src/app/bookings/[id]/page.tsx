@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { MainHeader } from '@/components/layout/main-header'
 import { BookingPaymentView } from '@/components/booking/booking-payment-view'
 import { isPaymentSimulationEnabled } from '@/lib/payos'
@@ -12,8 +12,8 @@ interface BookingPageProps {
 
 export default async function BookingPage({ params }: BookingPageProps) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await getSupabase()
+  const user = await getCurrentUser()
 
   if (!user) {
     redirect(`/login?next=/bookings/${id}`)

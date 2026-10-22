@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { ScheduleView } from '@/components/owner/schedule-view'
 
 export default async function OwnerSchedulePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await getSupabase()
+  const user = await getCurrentUser()
 
   // 1. Lấy tất cả sân con của các cụm sân mà user làm chủ
   const { data: clubs } = await supabase

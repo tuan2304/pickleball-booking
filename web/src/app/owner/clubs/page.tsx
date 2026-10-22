@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ClubFormModal } from '@/components/owner/club-form-modal'
@@ -8,8 +8,8 @@ import { ClubItemActions } from '@/components/owner/club-item-actions'
 import { Building2, MapPin, Clock, CircleDot, ShieldCheck } from 'lucide-react'
 
 export default async function OwnerClubsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await getSupabase()
+  const user = await getCurrentUser()
 
   const { data: clubs } = await supabase
     .from('clubs')
