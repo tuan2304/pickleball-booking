@@ -5,7 +5,7 @@ import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { CalendarCheck, Users, QrCode, ArrowRight, Flame, LogOut, Compass, Calendar } from 'lucide-react'
+import { CalendarCheck, Users, QrCode, ArrowRight, Flame, LogOut, Compass, Calendar, ShieldCheck } from 'lucide-react'
 import { Reveal } from '@/components/ui/reveal'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
@@ -55,6 +55,7 @@ export default async function Home() {
   }
 
   const isOwner = profile?.role === 'owner'
+  const isAdmin = profile?.role === 'admin'
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-emerald-500 selection:text-white">
@@ -107,10 +108,20 @@ export default async function Home() {
                       {profile?.full_name || 'Người dùng'}
                     </div>
                     <Badge variant="outline" className="text-xs py-0 px-1 border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
-                      {isOwner ? 'Chủ sân' : 'Người chơi'}
+                      {isAdmin ? 'Quản trị' : isOwner ? 'Chủ sân' : 'Người chơi'}
                     </Badge>
                   </div>
                 </div>
+
+                {isAdmin && (
+                  <Link href="/admin">
+                    <Button size="sm" className="text-xs font-semibold bg-amber-400 hover:bg-amber-300 text-slate-900 cursor-pointer shadow-sm shadow-amber-500/20">
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5" aria-hidden />
+                      <span className="hidden sm:inline">Trang quản trị</span>
+                      <span className="sm:hidden">Quản trị</span>
+                    </Button>
+                  </Link>
+                )}
 
                 {isOwner && (
                   <Link href="/owner/dashboard">

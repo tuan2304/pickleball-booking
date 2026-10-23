@@ -39,7 +39,9 @@ export async function login(formData: FormData): Promise<AuthResult> {
 
     revalidatePath('/', 'layout')
 
-    if (profile?.role === 'owner') {
+    if (profile?.role === 'admin') {
+      redirect('/admin')
+    } else if (profile?.role === 'owner') {
       redirect('/owner/dashboard')
     } else {
       redirect('/')

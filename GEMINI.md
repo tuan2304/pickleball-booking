@@ -229,3 +229,6 @@
     - `resolveClubChannel` không còn rơi về kênh PayOS của nền tảng: cụm sân chưa kết nối (hoặc khóa chưa xác thực) không nhận đặt sân online, khách thấy thông báo chưa nhận đặt; tiền cọc không bao giờ vào tài khoản nền tảng. Kênh nền tảng chỉ còn thu tiền thuê gói Pro. Dev chưa có khóa nào vẫn giả lập được.
     - Giữ lại việc kiểm tra webhook kênh `platform` và sổ đối soát cho các khoản cọc cũ. Cập nhật chữ ở trang Nhận thanh toán của chủ sân, `/admin/finance`, DEPLOYMENT.md.
     - Tạo tài khoản quản trị bằng service_role (email dạng `+admin` của chủ dự án, mật khẩu ngẫu nhiên, đã xác nhận email, `profiles.role = 'admin'`).
+- **2026-10-23 (Admin không còn thu hộ cọc):**
+    - Bỏ màn ghi nhận chi trả ở `/admin/finance` (nay là trang Gói dịch vụ), bỏ action `recordPayout`, ô số dư thu hộ ở trang Nhận thanh toán của chủ sân, thẻ "đang nợ chủ sân" và cảnh báo hoàn cọc ở thống kê. Giữ bảng `payouts`/`club_balances` trong DB để không mất sổ cũ.
+    - Thêm nút vàng **Trang quản trị** trên thanh đầu trang chủ và thanh điều hướng (chỉ admin thấy, có trên điện thoại); admin đăng nhập xong vào thẳng `/admin`.

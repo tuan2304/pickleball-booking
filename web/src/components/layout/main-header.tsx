@@ -81,15 +81,6 @@ async function HeaderContent() {
               Hỗ Trợ
             </Link>
           )}
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-amber-700 dark:hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
-            >
-              <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              Quản Trị
-            </Link>
-          )}
           {/* Chỉ hiện Cổng Chủ Sân nếu người dùng là owner */}
           {isOwner && (
             <Link
@@ -107,6 +98,15 @@ async function HeaderContent() {
           <ThemeToggle />
           {user ? (
             <div className="flex items-center gap-2 sm:gap-3">
+              {isAdmin && (
+                <Link href="/admin">
+                  <Button size="sm" className="text-xs font-semibold bg-amber-400 hover:bg-amber-300 text-slate-900 cursor-pointer shadow-sm shadow-amber-500/20">
+                    <ShieldCheck className="w-3.5 h-3.5 mr-1.5" aria-hidden />
+                    <span className="hidden sm:inline">Trang quản trị</span>
+                    <span className="sm:hidden">Quản trị</span>
+                  </Button>
+                </Link>
+              )}
               <NotificationBell userId={user.id} />
 
               <div className="flex items-center gap-2 pl-1">

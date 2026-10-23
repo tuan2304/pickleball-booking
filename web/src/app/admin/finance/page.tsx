@@ -1,11 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { PayoutForm, PlanActions } from '@/components/admin/admin-forms'
+import { PlanActions } from '@/components/admin/admin-forms'
 import { isProActive } from '@/lib/billing'
-import { formatDate, formatVnd } from '@/lib/format'
+import { formatDate } from '@/lib/format'
 
-export const metadata = { title: 'Tài chính và gói dịch vụ' }
+export const metadata = { title: 'Gói dịch vụ' }
 
 // Quyền admin đã được kiểm tra ở app/admin/layout.tsx
 export default async function AdminFinancePage() {
@@ -15,52 +15,15 @@ export default async function AdminFinancePage() {
     .from('clubs')
     .select('id, name, plan, plan_until, accepts_online_payment, owner:profiles!clubs_owner_id_fkey(full_name), courts(id, is_active)')
     .order('created_at', { ascending: true })
-  const { data: balances } = await admin.rpc('club_balances')
-  const balanceByClub = new Map((balances ?? []).map((b) => [b.club_id, b]))
 
   const now = new Date()
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-extrabold">Tài chính và gói dịch vụ</h1>
-        <p className="text-sm text-muted-foreground mt-1">Quản lý gói Free/Pro của từng cụm sân và đối soát các khoản cọc cũ do nền tảng thu hộ (trước khi bắt buộc chủ sân kết nối PayOS riêng).</p>
+        <h1 className="text-2xl font-extrabold">Gói dịch vụ</h1>
+        <p className="text-sm text-muted-foreground mt-1">Cấp hoặc gia hạn gói Pro cho từng cụm sân. Tiền cọc đặt sân đi thẳng vào tài khoản của chủ sân nên bạn không phải đối soát hay chuyển tiền.</p>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Tiền cọc nền tảng đang thu hộ</CardTitle>
-          <CardDescription>
-            Chỉ gồm các khoản cọc thật đã thanh toán qua kênh PayOS của nền tảng (cụm sân chưa tự kết nối PayOS).
-            Hệ thống không tự chuyển tiền: hãy chuyển khoản cho chủ sân rồi bấm &quot;Ghi nhận đã chuyển&quot;.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {(clubs ?? []).map((club) => {
-            const b = balanceByClub.get(club.id)
-            if (!b || (Number(b.collected) === 0 && Number(b.paid_out) === 0)) return null
-            return (
-              <div key={club.id} className="p-4 rounded-xl border border-border space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <div className="font-bold">{club.name}</div>
-                    <div className="text-xs text-muted-foreground">Chủ sân: {club.owner?.full_name || '—'}</div>
-                  </div>
-                  <div className="flex gap-4 text-xs text-right">
-                    <div><div className="text-muted-foreground">Đã thu hộ</div><b>{formatVnd(b.collected)}</b></div>
-                    <div><div className="text-muted-foreground">Đã chi</div><b>{formatVnd(b.paid_out)}</b></div>
-                    <div><div className="text-muted-foreground">Còn nợ chủ sân</div><b className="text-emerald-700 dark:text-emerald-400">{formatVnd(b.owed)}</b></div>
-                  </div>
-                </div>
-                <PayoutForm clubId={club.id} owed={Number(b.owed)} />
-              </div>
-            )
-          })}
-          {(balances ?? []).every((b) => Number(b.collected) === 0 && Number(b.paid_out) === 0) && (
-            <p className="text-sm text-muted-foreground">Không còn khoản cọc nào do nền tảng thu hộ cần đối soát.</p>
-          )}
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>

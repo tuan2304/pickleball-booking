@@ -5,50 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth-guards'
 import { notifyUser } from '@/lib/notify'
 import { DAYS_PER_MONTH } from '@/lib/billing'
-import { formatDate, formatVnd } from '@/lib/format'
-
-/** Ghi nhận nền tảng đã chuyển tiền thu hộ cho chủ sân (sổ đối soát). Không tự chuyển tiền thật. */
-export async function recordPayout(clubId: string, amount: number, note: string): Promise<{ error?: string; success?: boolean }> {
-  const auth = await requireAdmin()
-  if ('error' in auth) return { error: auth.error }
-
-  const value = Math.round(Number(amount))
-  if (!Number.isFinite(value) || value <= 0) return { error: 'Số tiền phải lớn hơn 0' }
-
-  const admin = createAdminClient()
-  const { data: balances, error: balErr } = await admin.rpc('club_balances', { p_club_ids: [clubId] })
-  const balance = balances?.[0]
-  if (balErr || !balance) return { error: 'Không tra được số dư của cụm sân' }
-  if (value > Number(balance.owed)) {
-    return { error: `Chỉ còn nợ ${formatVnd(balance.owed)}, không thể ghi nhận chi ${formatVnd(value)}` }
-  }
-
-  const { error } = await admin.from('payouts').insert({
-    club_id: clubId,
-    amount: value,
-    note: note?.trim().slice(0, 300) || null,
-    created_by: auth.user.id,
-  })
-  if (error) {
-    console.error('recordPayout lỗi', error)
-    return { error: 'Không ghi nhận được khoản chi' }
-  }
-
-  const { data: club } = await admin.from('clubs').select('owner_id, name').eq('id', clubId).maybeSingle()
-  if (club) {
-    await notifyUser({
-      userId: club.owner_id,
-      title: 'Nền tảng đã chuyển tiền cọc cho bạn',
-      message: `Đã chuyển ${formatVnd(value)} tiền cọc thu hộ của "${club.name}"${note ? ` (${note.trim().slice(0, 100)})` : ''}.`,
-      type: 'payment',
-      link: '/owner/payments',
-    })
-  }
-
-  revalidatePath('/admin/finance')
-  revalidatePath('/owner/payments')
-  return { success: true }
-}
+import { formatDate } from '@/lib/format'
 
 /** Cấp/gia hạn gói Pro thủ công (vd. chủ sân chuyển khoản trực tiếp, hoặc tặng thời gian dùng thử). */
 export async function grantPlan(clubId: string, months: number): Promise<{ error?: string; success?: boolean }> {

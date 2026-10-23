@@ -56,21 +56,11 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         </nav>
       </div>
 
-      {(stats.open_tickets > 0 || stats.deposits.needs_refund > 0) && (
-        <div className="grid gap-3 md:grid-cols-2">
-          {stats.open_tickets > 0 && (
-            <Link href="/admin/tickets" className="flex items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm hover:bg-amber-500/15">
-              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
-              <span><b>{stats.open_tickets}</b> yêu cầu hỗ trợ đang chờ trả lời</span>
-            </Link>
-          )}
-          {stats.deposits.needs_refund > 0 && (
-            <div className="flex items-center gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm">
-              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" aria-hidden />
-              <span>Có <b>{formatVnd(stats.deposits.needs_refund)}</b> cọc cần hoàn lại cho khách (đặt chậm hoặc trùng giờ)</span>
-            </div>
-          )}
-        </div>
+      {stats.open_tickets > 0 && (
+        <Link href="/admin/tickets" className="flex items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm hover:bg-amber-500/15">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
+          <span><b>{stats.open_tickets}</b> yêu cầu hỗ trợ đang chờ trả lời</span>
+        </Link>
       )}
 
       <section aria-labelledby="sec-revenue" className="space-y-3">
@@ -78,8 +68,8 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Kpi label="Doanh thu thuê gói Pro" value={formatVnd(stats.subscriptions.revenue)} hint={`${formatNumber(stats.subscriptions.count)} lượt thanh toán`} accent />
           <Kpi label="Giá trị đặt sân (GMV)" value={formatVnd(stats.bookings.gmv)} hint="Đơn đã xác nhận, không phải doanh thu của bạn" />
-          <Kpi label="Cọc đã thu" value={formatVnd(stats.deposits.collected)} hint={`Kênh nền tảng ${formatVnd(stats.deposits.platform_channel)} · kênh chủ sân ${formatVnd(stats.deposits.club_channel)}`} />
-          <Kpi label="Đang nợ chủ sân" value={formatVnd(stats.owed_total)} hint="Cọc thu hộ chưa chuyển khoản" />
+          <Kpi label="Cọc khách đã trả" value={formatVnd(stats.deposits.collected)} hint="Về thẳng tài khoản chủ sân, không qua nền tảng" />
+          <Kpi label="Cụm sân đang dùng gói Pro" value={formatNumber(stats.clubs.pro)} hint={`Trên tổng ${formatNumber(stats.clubs.total)} cụm sân`} />
         </div>
       </section>
 

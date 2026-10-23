@@ -2,7 +2,6 @@ import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PaymentSettingsForm } from '@/components/owner/payment-settings-form'
-import { formatVnd } from '@/lib/format'
 import { resolveAppUrl } from '@/lib/app-url'
 import { Wallet, Landmark } from 'lucide-react'
 
@@ -22,14 +21,10 @@ export default async function OwnerPaymentsPage() {
 
   // Khóa chỉ đọc được bằng service_role; ở đây chỉ lấy phần không bí mật (Client ID, thời điểm xác thực)
   const admin = createAdminClient()
-  const [{ data: settings }, { data: balances }] = await Promise.all([
-    clubIds.length
-      ? admin.from('club_payment_settings').select('club_id, payos_client_id, verified_at').in('club_id', clubIds)
-      : Promise.resolve({ data: [] }),
-    clubIds.length ? admin.rpc('club_balances', { p_club_ids: clubIds }) : Promise.resolve({ data: [] }),
-  ])
+  const { data: settings } = clubIds.length
+    ? await admin.from('club_payment_settings').select('club_id, payos_client_id, verified_at').in('club_id', clubIds)
+    : { data: [] }
   const settingsByClub = new Map((settings ?? []).map((s) => [s.club_id, s]))
-  const balanceByClub = new Map((balances ?? []).map((b) => [b.club_id, b]))
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -73,7 +68,6 @@ export default async function OwnerPaymentsPage() {
       ) : (
         clubList.map((club) => {
           const s = settingsByClub.get(club.id)
-          const b = balanceByClub.get(club.id)
           return (
             <Card key={club.id}>
               <CardHeader>
@@ -94,23 +88,6 @@ export default async function OwnerPaymentsPage() {
                     <span>
                       Cụm sân này <strong>chưa nhận đặt sân online</strong> cho tới khi bạn kết nối PayOS ở trên.
                     </span>
-                  </div>
-                )}
-
-                {b && Number(b.collected) > 0 && (
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <div className="text-xs text-muted-foreground">Cọc cũ nền tảng đã thu hộ</div>
-                      <div className="font-bold text-foreground">{formatVnd(b.collected)}</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <div className="text-xs text-muted-foreground">Đã chuyển cho bạn</div>
-                      <div className="font-bold text-foreground">{formatVnd(b.paid_out)}</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-emerald-500/10">
-                      <div className="text-xs text-muted-foreground">Còn chờ chuyển</div>
-                      <div className="font-bold text-emerald-700 dark:text-emerald-400">{formatVnd(b.owed)}</div>
-                    </div>
                   </div>
                 )}
               </CardContent>

@@ -178,13 +178,13 @@ Có **hai cách nhận tiền cọc**, hệ thống tự chọn theo từng cụ
 update public.profiles set role = 'admin'
 where id = (select id from auth.users where email = 'EMAIL_CUA_BAN');
 ```
-   Sau đó vào `https://<tên-miền>/admin` để xem thống kê, trả lời hỗ trợ, gửi thông báo và cấp gói thủ công (`/admin/finance`).
+   Sau đó vào `https://<tên-miền>/admin` để xem thống kê, trả lời hỗ trợ, gửi thông báo và cấp gói thủ công (`/admin/finance`). Tài khoản quản trị đăng nhập xong được đưa thẳng vào `/admin`; ở các trang khác có nút vàng **Trang quản trị** trên thanh đầu trang.
 4. **Tài khoản mẫu:** `cd web && node --env-file=.env.local scripts/secure-seed-accounts.mjs` (xem trước), thêm `--apply` để đổi mật khẩu ngẫu nhiên. Đã chạy `--apply` trên database hiện tại ngày 22/10/2026.
 
 ### Chủ sân nhận tiền cọc (bắt buộc kết nối PayOS riêng)
 - Từ 23/10/2026 cụm sân **chỉ nhận đặt sân online khi chủ sân đã kết nối PayOS riêng** ở mục **Nhận thanh toán**; tiền cọc về thẳng tài khoản của họ. Nền tảng không còn thu hộ cọc, nên không phải đối soát hay chuyển tiền lại.
-- Cụm sân chưa kết nối hiện thông báo "chưa nhận đặt sân online" với khách và có huy hiệu tương ứng ở `/admin/finance`.
-- Các khoản cọc cũ do nền tảng đã thu hộ (nếu có) vẫn hiện ở `/admin/finance` để ghi nhận chi trả. Khoản "đã nhận nhưng mất sân" (`needs_refund`) và khoản giả lập **không** được tính cho chủ sân.
+- Cụm sân chưa kết nối hiện thông báo "chưa nhận đặt sân online" với khách và có huy hiệu tương ứng ở `/admin/finance` (trang Gói dịch vụ).
+- Quản trị không còn phải đối soát hay chuyển tiền cọc: màn ghi nhận chi trả đã bỏ. Bảng `payouts` và hàm `club_balances` vẫn nằm trong database để giữ sổ cũ.
 
 ### Thuê bao
 - Chưa đặt `BILLING_ENFORCED_FROM` thì **không có giới hạn nào**; chủ sân vẫn thấy trang **Gói dịch vụ** và có thể mua Pro thử.

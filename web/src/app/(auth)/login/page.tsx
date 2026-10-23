@@ -20,7 +20,9 @@ export default async function LoginPage() {
       .eq('id', user.id)
       .single()
 
-    if (profile?.role === 'owner') {
+    if (profile?.role === 'admin') {
+      redirect('/admin')
+    } else if (profile?.role === 'owner') {
       redirect('/owner/dashboard')
     } else {
       redirect('/')

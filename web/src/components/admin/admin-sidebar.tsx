@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: 'Thống kê vận hành', href: '/admin', icon: BarChart3, exact: true },
   { label: 'Hỗ trợ (ticket)', href: '/admin/tickets', icon: LifeBuoy, exact: false },
   { label: 'Gửi thông báo', href: '/admin/announcements', icon: Megaphone, exact: false },
-  { label: 'Tài chính và gói', href: '/admin/finance', icon: Wallet, exact: false },
+  { label: 'Gói dịch vụ', href: '/admin/finance', icon: Wallet, exact: false },
 ]
 
 interface AdminSidebarProps {
