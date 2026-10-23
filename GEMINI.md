@@ -177,7 +177,7 @@
 
 
 - **2026-10-21 (Rà soát & nâng cấp giao diện):**
-    - Rà soát toàn bộ dự án, ghi kết quả vào [IMPROVEMENTS.md](IMPROVEMENTS.md): phát hiện các lỗ hổng bảo mật/thanh toán (P0), lỗi nghiệp vụ (P1) và danh sách việc nên làm tiếp (P2/P3). **Đề xuất Giai đoạn 10: Hardening (RLS, webhook, pg_cron, múi giờ) trước khi chạy thật.**
+    - Rà soát toàn bộ dự án, ghi kết quả vào file IMPROVEMENTS.md (đã gỡ ngày 23/10/2026, việc còn lại nằm ở README): phát hiện các lỗ hổng bảo mật/thanh toán (P0), lỗi nghiệp vụ (P1) và danh sách việc nên làm tiếp (P2/P3). **Đề xuất Giai đoạn 10: Hardening (RLS, webhook, pg_cron, múi giờ) trước khi chạy thật.**
     - Viết tài liệu luồng hoạt động có sơ đồ Mermaid: [FLOW.md](FLOW.md).
     - Nâng cấp giao diện: sửa lỗi font không áp dụng (`--font-sans` tự tham chiếu chính nó), đổi sang **Be Vietnam Pro** (thân bài, có subset tiếng Việt) + **Barlow Condensed** (tiêu đề); màu `--primary` chuyển sang emerald; thêm hệ animation (fade-up, float, shimmer, card-lift, btn-shine, scroll-reveal, page transition, skeleton loading) có hỗ trợ `prefers-reduced-motion`; làm lại hero + thêm mục 'Bốn bước' ở trang chủ.
     - Build production thành công (15 route).
@@ -188,7 +188,7 @@
     - UI thanh toán: dùng thông tin tài khoản từ PayOS, nút giả lập chỉ ở dev, đếm ngược theo giờ server, polling dự phòng. Chat chỉ hiện cho thành viên.
     - Mobile: khóa Supabase sang `EXPO_PUBLIC_*`, nút đổi tài khoản mẫu chỉ ở `__DEV__`.
     - Dọn dẹp: `middleware.ts` -> `proxy.ts`, gỡ `socket.io`, sửa `.gitignore`.
-    - **Việc còn lại của bạn:** chạy `supabase db push`, bật `pg_cron`, điền khóa PayOS + đăng ký Webhook URL, xóa/đổi mật khẩu tài khoản seed trên DB production. Chi tiết trong [DEPLOYMENT.md](DEPLOYMENT.md) và [IMPROVEMENTS.md](IMPROVEMENTS.md).
+    - **Việc còn lại của bạn:** chạy `supabase db push`, bật `pg_cron`, điền khóa PayOS + đăng ký Webhook URL, xóa/đổi mật khẩu tài khoản seed trên DB production. Chi tiết trong [DEPLOYMENT.md](DEPLOYMENT.md).
 - **2026-10-22 (Dọn code, tối ưu hiệu năng, UI/UX, test, CI):**
     - Hiệu năng trên Vercel: `web/vercel.json` đặt vùng `sin1` (cùng Singapore với Supabase), `lib/supabase/session.ts` (React.cache) để mỗi request chỉ gọi Auth/profile một lần, header tải qua `Suspense`, các truy vấn độc lập chạy song song, `next/image` cho ảnh đã whitelist.
     - Dọn code: `lib/constants.ts` + `lib/format.ts` (ép múi giờ VN) thay cho nhãn/hàm định dạng lặp ở nhiều file; type DB tách thành `supabase.generated.ts` (cập nhật bằng `npm run db:types`); eslint từ 30 lỗi + 41 cảnh báo xuống 0.
@@ -232,3 +232,4 @@
 - **2026-10-23 (Admin không còn thu hộ cọc):**
     - Bỏ màn ghi nhận chi trả ở `/admin/finance` (nay là trang Gói dịch vụ), bỏ action `recordPayout`, ô số dư thu hộ ở trang Nhận thanh toán của chủ sân, thẻ "đang nợ chủ sân" và cảnh báo hoàn cọc ở thống kê. Giữ bảng `payouts`/`club_balances` trong DB để không mất sổ cũ.
     - Thêm nút vàng **Trang quản trị** trên thanh đầu trang chủ và thanh điều hướng (chỉ admin thấy, có trên điện thoại); admin đăng nhập xong vào thẳng `/admin`.
+- **2026-10-23 (Dọn tài liệu):** Gỡ `IMPROVEMENTS.md` (báo cáo rà soát đã xử lý xong; việc còn lại chuyển sang mục "Việc chưa làm" của [README.md](README.md)) và `web/README.md` (bản mẫu create-next-app). Giữ `AGENTS.md`/`CLAUDE.md` vì là hướng dẫn cho công cụ AI.

@@ -317,4 +317,4 @@ timeline
 
 ---
 
-*Xem thêm: [GEMINI.md](GEMINI.md) – nhật ký chi tiết · [DEPLOYMENT.md](DEPLOYMENT.md) – hướng dẫn triển khai · [IMPROVEMENTS.md](IMPROVEMENTS.md) – việc cần tối ưu.*
+*Xem thêm: [GEMINI.md](GEMINI.md) – nhật ký chi tiết · [DEPLOYMENT.md](DEPLOYMENT.md) – hướng dẫn triển khai*

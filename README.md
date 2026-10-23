@@ -144,6 +144,14 @@ Từng bước, kể cả cài PayOS và webhook, xem [DEPLOYMENT.md](DEPLOYMENT
 
 Phát hiện lỗ hổng thì báo riêng cho chủ dự án, đừng mở issue công khai.
 
+## Việc chưa làm
+
+- Chính sách hủy và hoàn cọc (hủy trước bao lâu, hoàn bao nhiêu phần trăm): cần chủ dự án quyết định.
+- Trang danh sách sân đang tải hết rồi lọc ở phía trình duyệt: chuyển sang lọc trong truy vấn và phân trang khi số sân tăng.
+- SEO, trang `error.tsx` riêng và tối ưu số kết nối Realtime.
+- Hồ sơ người dùng, hoàn tiền tự động, ảnh sân, đặt sân trên app mobile.
+- Thêm nhà cung cấp thanh toán khác (ví dụ SePay) cho chủ sân dùng ngân hàng PayOS chưa hỗ trợ.
+
 ## Đóng góp
 
 1. Tạo nhánh từ `master`, ví dụ `feature/ten-tinh-nang`.
