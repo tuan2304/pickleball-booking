@@ -433,6 +433,11 @@ isOneToOne: false
 "gen_salt":
 { Args: { "": string }; Returns: string
                            },
+"get_booking_contacts":
+{ Args: { "p_booking_ids": (string)[] }; Returns: {
+              "booking_id": string,"full_name": string,"phone_number": string | null
+            }[]
+                           },
 "get_busy_slots":
 { Args: { "p_court_ids": (string)[] }; Returns: {
               "court_id": string,"end_time": string,"start_time": string,"status": string

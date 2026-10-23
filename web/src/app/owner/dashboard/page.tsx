@@ -40,7 +40,7 @@ export default async function OwnerDashboardPage() {
     deposit_amount: number
     status: string
     court: { name: string; sport_type: string } | null
-    profile: { full_name: string; phone_number: string | null } | null
+    profile: { full_name: string } | null
   }> = []
 
   if (courtIds.length > 0) {
@@ -54,7 +54,7 @@ export default async function OwnerDashboardPage() {
         deposit_amount,
         status,
         court:courts(name, sport_type),
-        profile:profiles(full_name, phone_number)
+        profile:profiles(full_name)
       `)
       .in('court_id', courtIds)
       .order('created_at', { ascending: false })

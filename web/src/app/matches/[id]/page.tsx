@@ -34,8 +34,7 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
       creator:profiles (
         id,
         full_name,
-        avatar_url,
-        phone_number
+        avatar_url
       ),
       booking:bookings (
         id,

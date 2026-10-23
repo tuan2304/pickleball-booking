@@ -208,6 +208,23 @@ SELECT t(NULL,'service_role',$$SELECT (jsonb_array_length(public.platform_stats(
 SELECT t(NULL,'service_role',$$SELECT (jsonb_array_length(public.platform_stats(now() - interval '30 days', now() + interval '1 day')->'top_clubs') >= 1)::text$$,'true','có cụm sân trong bảng xếp hạng');
 SELECT t(NULL,'service_role',$$SELECT (public.platform_stats(now() + interval '10 days', now() + interval '11 days')->'deposits'->>'collected')$$,'0','khoảng không có giao dịch cho kết quả 0');
 
+-- ---------------------------------------------------------------- 11. Quyền đọc theo cột của profiles
+UPDATE profiles SET phone_number = '0901234567' WHERE id = 'b0000000-0000-0000-0000-00000000000b';
+SELECT t(NULL,'anon',$$SELECT * FROM profiles$$,'ERR','khách không SELECT * được bảng profiles');
+SELECT t(NULL,'anon',$$SELECT phone_number FROM profiles$$,'ERR','khách không đọc được số điện thoại');
+SELECT t(NULL,'anon',$$SELECT role FROM profiles$$,'ERR','khách không đọc được cột role');
+SELECT t(NULL,'anon',$$SELECT full_name FROM profiles WHERE id='c0000000-0000-0000-0000-00000000000c'$$,'Chi','khách vẫn thấy tên hiển thị công khai');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT phone_number FROM profiles WHERE id='b0000000-0000-0000-0000-00000000000b'$$,'ERR','người dùng không đọc được số điện thoại người khác');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT phone_number FROM profiles WHERE id=auth.uid()$$,'ERR','quyền cột áp cho cả số của chính mình (không có đường đọc trực tiếp)');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT * FROM profiles$$,'ERR','người dùng không SELECT * được bảng profiles');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT full_name FROM profiles WHERE id='d0000000-0000-0000-0000-00000000000d'$$,'Dung','người dùng đọc được tên người khác');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT role FROM profiles WHERE id=auth.uid()$$,'player','người dùng đọc được role của mình');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$WITH x AS (UPDATE profiles SET phone_number='0987654321' WHERE id=auth.uid() RETURNING 1) SELECT count(*)::text FROM x$$,'1','người dùng vẫn cập nhật được số điện thoại của mình');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT phone_number FROM public.get_booking_contacts(ARRAY['33333333-3333-3333-3333-333333333333']::uuid[])$$,'0901234567','chủ sân lấy được số điện thoại khách đặt sân của mình');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$SELECT count(*)::text FROM public.get_booking_contacts(ARRAY['33333333-3333-3333-3333-333333333333']::uuid[])$$,'0','chủ sân khác không lấy được số điện thoại khách');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT count(*)::text FROM public.get_booking_contacts(ARRAY['33333333-3333-3333-3333-333333333333']::uuid[])$$,'0','người chơi không lấy được số điện thoại qua hàm chủ sân');
+SELECT t(NULL,'anon',$$SELECT count(*)::text FROM public.get_booking_contacts(ARRAY['33333333-3333-3333-3333-333333333333']::uuid[])$$,'ERR','khách không gọi được hàm lấy số điện thoại');
+
 -- ---------------------------------------------------------------- Tổng kết
 SELECT CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END AS ket_qua, label AS ca_kiem_thu, CASE WHEN ok THEN '' ELSE detail END AS chi_tiet FROM test_results ORDER BY ok, label;
 DO $$

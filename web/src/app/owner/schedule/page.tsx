@@ -57,10 +57,16 @@ export default async function OwnerSchedulePage() {
         deposit_amount,
         status,
         court:courts(name),
-        profile:profiles(full_name, phone_number)
+        profile:profiles(full_name)
       `)
       .in('court_id', courtIds)
       .order('start_time', { ascending: true })
+
+    // Số điện thoại không đọc được trực tiếp từ profiles; hàm này chỉ trả khách đặt sân của chủ sân
+    const { data: contacts } = await supabase.rpc('get_booking_contacts', {
+      p_booking_ids: (bookingData || []).map((b) => b.id),
+    })
+    const phoneByBooking = new Map((contacts || []).map((c) => [c.booking_id, c.phone_number]))
 
     bookings = (bookingData || []).map((item) => ({
       id: item.id,
@@ -71,7 +77,7 @@ export default async function OwnerSchedulePage() {
       deposit_amount: Number(item.deposit_amount),
       status: item.status as BookingStatus,
       user_name: item.profile?.full_name || 'Khách vãng lai',
-      user_phone: item.profile?.phone_number || 'Chưa cung cấp',
+      user_phone: phoneByBooking.get(item.id) || 'Chưa cung cấp',
       court_name: item.court?.name || 'Sân tiêu chuẩn',
     }))
   }

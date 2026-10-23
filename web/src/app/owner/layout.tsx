@@ -19,7 +19,7 @@ export default async function OwnerLayout({
   // Lấy thông tin profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, full_name, role')
     .eq('id', user.id)
     .single()
 

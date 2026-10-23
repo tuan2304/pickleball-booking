@@ -28,7 +28,8 @@ export type MiniProfile = {
   id: string
   full_name: string
   avatar_url: string | null
-  role: string
+  // Khách (anon) không đọc được cột role nên các truy vấn công khai bỏ qua nó
+  role?: string
 }
 
 export interface MatchMessage {

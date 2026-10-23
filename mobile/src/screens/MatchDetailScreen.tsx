@@ -40,7 +40,6 @@ export default function MatchDetailScreen({ route, navigation }: any) {
           creator:profiles (
             id,
             full_name,
-            phone_number,
             rating,
             skill_level
           ),

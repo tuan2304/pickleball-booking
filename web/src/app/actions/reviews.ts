@@ -20,8 +20,7 @@ export async function getClubReviews(clubId: string): Promise<ClubReview[]> {
       profile:profiles (
         id,
         full_name,
-        avatar_url,
-        role
+        avatar_url
       )
     `)
     .eq('club_id', clubId)

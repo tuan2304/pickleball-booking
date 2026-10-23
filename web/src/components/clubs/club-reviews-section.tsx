@@ -59,7 +59,7 @@ export function ClubReviewsSection({
             if (newRev.user_id) {
               const { data: p } = await supabase
                 .from('profiles')
-                .select('id, full_name, avatar_url, role')
+                .select('id, full_name, avatar_url')
                 .eq('id', newRev.user_id)
                 .single()
               profile = p || undefined

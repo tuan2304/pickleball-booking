@@ -47,7 +47,7 @@ export default function ProfileScreen() {
         setCurrentUserEmail(session.user.email || null)
         const { data } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, full_name, avatar_url, role, skill_level, rating')
           .eq('id', session.user.id)
           .single()
         setProfile(data)
