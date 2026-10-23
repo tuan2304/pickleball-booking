@@ -225,6 +225,14 @@ SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$SELECT count(*
 SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT count(*)::text FROM public.get_booking_contacts(ARRAY['33333333-3333-3333-3333-333333333333']::uuid[])$$,'0','người chơi không lấy được số điện thoại qua hàm chủ sân');
 SELECT t(NULL,'anon',$$SELECT count(*)::text FROM public.get_booking_contacts(ARRAY['33333333-3333-3333-3333-333333333333']::uuid[])$$,'ERR','khách không gọi được hàm lấy số điện thoại');
 
+-- 11b. Các truy vấn công khai của giao diện vẫn chạy được với quyền cột mới
+SELECT t(NULL,'anon',$$SELECT count(*)::text FROM club_reviews r JOIN profiles p ON p.id = r.user_id WHERE p.full_name IS NOT NULL$$,'1','khách xem được đánh giá kèm tên người đánh giá');
+SELECT t(NULL,'anon',$$SELECT (count(*) > 0)::text FROM matches m JOIN profiles p ON p.id = m.creator_id WHERE p.full_name IS NOT NULL AND p.avatar_url IS NOT NULL$$,'true','khách xem được kèo kèm tên và avatar người tạo');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT (count(*) > 0)::text FROM bookings b JOIN courts ct ON ct.id = b.court_id JOIN profiles p ON p.id = b.user_id WHERE p.full_name IS NOT NULL$$,'true','chủ sân xem được đơn đặt kèm tên khách (lịch đặt sân)');
+
+-- 11c. anon không còn quyền ghi ở bất kỳ bảng nào
+SELECT t(NULL,'postgres',$$SELECT count(*)::text FROM information_schema.role_table_grants WHERE grantee='anon' AND table_schema='public' AND privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE')$$,'0','anon không giữ quyền ghi trên bảng nào của schema public');
+
 -- ---------------------------------------------------------------- Tổng kết
 SELECT CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END AS ket_qua, label AS ca_kiem_thu, CASE WHEN ok THEN '' ELSE detail END AS chi_tiet FROM test_results ORDER BY ok, label;
 DO $$
