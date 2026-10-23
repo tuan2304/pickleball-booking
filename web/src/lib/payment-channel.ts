@@ -1,13 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { decryptSecret } from '@/lib/crypto'
-import { getPlatformCredentials, isPayOSConfigured, isPaymentSimulationEnabled, type PayosCredentials } from '@/lib/payos'
+import { getPlatformCredentials, isPaymentSimulationEnabled, type PayosCredentials } from '@/lib/payos'
 
 /**
  * Kênh nhận tiền cọc của một cụm sân:
- *  - club:       chủ sân tự kết nối PayOS → tiền về thẳng tài khoản của họ
- *  - platform:   cụm sân chưa kết nối → tiền về kênh của nền tảng, nền tảng chi lại sau (xem bảng payouts)
+ *  - club:       chủ sân tự kết nối PayOS → tiền về thẳng tài khoản của họ (cách duy nhất nhận đặt sân thật)
+ *  - platform:   chỉ còn cho các khoản cọc cũ đã thu trước khi bắt buộc kết nối riêng (webhook vẫn phải kiểm tra được)
  *  - simulation: môi trường dev chưa có khóa nào → QR mẫu và nút giả lập
+ *
+ * Kênh PayOS của nền tảng chỉ dùng để thu tiền thuê gói Pro, không bao giờ thu hộ cọc của khách.
  */
 export type PaymentChannel =
   | { kind: 'club'; clubId: string; creds: PayosCredentials }
@@ -34,13 +36,13 @@ async function loadClubCredentials(admin: Admin, clubId: string): Promise<{ cred
   }
 }
 
-/** Chọn kênh để tạo đơn thanh toán mới. Trả null nếu cụm sân không thể nhận thanh toán online. */
+/**
+ * Chọn kênh để tạo đơn thanh toán mới. Trả null nếu cụm sân chưa kết nối PayOS riêng (và không phải môi trường dev giả lập):
+ * khi đó cụm sân chưa nhận đặt sân online, tiền của khách không bao giờ đi qua tài khoản của nền tảng.
+ */
 export async function resolveClubChannel(admin: Admin, clubId: string): Promise<PaymentChannel | null> {
   const own = await loadClubCredentials(admin, clubId)
   if (own?.verified) return { kind: 'club', clubId, creds: own.creds }
-
-  const platform = getPlatformCredentials()
-  if (platform) return { kind: 'platform', creds: platform }
 
   if (isPaymentSimulationEnabled()) return { kind: 'simulation' }
   return null
@@ -65,5 +67,5 @@ export async function credentialsForStoredChannel(
 
 /** Cụm sân có nhận đặt sân online được không (để ẩn/hiện form đặt ở giao diện). */
 export function canAcceptBookings(acceptsOnlinePayment: boolean): boolean {
-  return acceptsOnlinePayment || isPayOSConfigured() || isPaymentSimulationEnabled()
+  return acceptsOnlinePayment || isPaymentSimulationEnabled()
 }

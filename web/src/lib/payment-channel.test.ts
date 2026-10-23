@@ -57,20 +57,16 @@ describe('resolveClubChannel', () => {
     })
   })
 
-  it('đã nhập khóa nhưng chưa xác thực được: không dùng, rơi về kênh nền tảng', async () => {
+  it('đã nhập khóa nhưng chưa xác thực được: không dùng khóa đó và không rơi về kênh nền tảng', async () => {
     db.tables.club_payment_settings.push(settings(false))
     setPlatformKeys()
 
-    const ch = await resolveClubChannel(admin(), 'club-1')
-    expect(ch?.kind).toBe('platform')
+    expect(await resolveClubChannel(admin(), 'club-1')).toBeNull()
   })
 
-  it('chưa kết nối PayOS riêng: dùng kênh nền tảng', async () => {
+  it('chưa kết nối PayOS riêng: không nhận đặt sân, tiền của khách không vào kênh nền tảng', async () => {
     setPlatformKeys()
-    expect(await resolveClubChannel(admin(), 'club-1')).toMatchObject({
-      kind: 'platform',
-      creds: { clientId: 'plat-client' },
-    })
+    expect(await resolveClubChannel(admin(), 'club-1')).toBeNull()
   })
 
   it('không có khóa nào (môi trường dev): giả lập', async () => {
@@ -97,9 +93,13 @@ describe('credentialsForStoredChannel', () => {
 })
 
 describe('canAcceptBookings', () => {
-  it('nhận đặt khi cụm sân tự kết nối, hoặc khi nền tảng có kênh thu hộ', () => {
+  it('chỉ nhận đặt khi cụm sân tự kết nối PayOS (khóa nền tảng không làm cụm sân nhận đặt được)', () => {
     expect(canAcceptBookings(true)).toBe(true)
     setPlatformKeys()
+    expect(canAcceptBookings(false)).toBe(false)
+  })
+
+  it('môi trường dev chưa có khóa nào: cho đặt thử bằng giả lập', () => {
     expect(canAcceptBookings(false)).toBe(true)
   })
 })

@@ -24,7 +24,7 @@ export default async function AdminFinancePage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-extrabold">Tài chính và gói dịch vụ</h1>
-        <p className="text-sm text-muted-foreground mt-1">Đối soát tiền cọc nền tảng thu hộ và quản lý gói Free/Pro của từng cụm sân.</p>
+        <p className="text-sm text-muted-foreground mt-1">Quản lý gói Free/Pro của từng cụm sân và đối soát các khoản cọc cũ do nền tảng thu hộ (trước khi bắt buộc chủ sân kết nối PayOS riêng).</p>
       </div>
 
       <Card>
@@ -57,7 +57,7 @@ export default async function AdminFinancePage() {
             )
           })}
           {(balances ?? []).every((b) => Number(b.collected) === 0 && Number(b.paid_out) === 0) && (
-            <p className="text-sm text-muted-foreground">Chưa có khoản cọc nào do nền tảng thu hộ.</p>
+            <p className="text-sm text-muted-foreground">Không còn khoản cọc nào do nền tảng thu hộ cần đối soát.</p>
           )}
         </CardContent>
       </Card>
@@ -84,7 +84,7 @@ export default async function AdminFinancePage() {
                     {club.accepts_online_payment ? (
                       <Badge className="bg-emerald-700 text-white">PayOS riêng</Badge>
                     ) : (
-                      <Badge variant="outline">Dùng kênh nền tảng</Badge>
+                      <Badge variant="outline" className="text-amber-800 dark:text-amber-300 border-amber-500/40">Chưa kết nối, không nhận đặt sân</Badge>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground">

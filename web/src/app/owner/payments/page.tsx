@@ -2,7 +2,6 @@ import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PaymentSettingsForm } from '@/components/owner/payment-settings-form'
-import { isPayOSConfigured } from '@/lib/payos'
 import { formatVnd } from '@/lib/format'
 import { resolveAppUrl } from '@/lib/app-url'
 import { Wallet, Landmark } from 'lucide-react'
@@ -31,7 +30,6 @@ export default async function OwnerPaymentsPage() {
   ])
   const settingsByClub = new Map((settings ?? []).map((s) => [s.club_id, s]))
   const balanceByClub = new Map((balances ?? []).map((b) => [b.club_id, b]))
-  const platformHolds = isPayOSConfigured()
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -41,7 +39,7 @@ export default async function OwnerPaymentsPage() {
           Nhận thanh toán
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Kết nối kênh PayOS của bạn để tiền cọc của khách chuyển <strong>thẳng vào tài khoản ngân hàng của bạn</strong>.
+          Kết nối kênh PayOS của bạn để nhận đặt sân online. Tiền cọc của khách chuyển <strong>thẳng vào tài khoản ngân hàng của bạn</strong>, SportArena không giữ hộ.
         </p>
       </div>
 
@@ -90,12 +88,11 @@ export default async function OwnerPaymentsPage() {
                   verifiedAt={s?.verified_at ?? null}
                 />
 
-                {!s?.verified_at && platformHolds && (
+                {!s?.verified_at && (
                   <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
                     <Landmark className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
                     <span>
-                      Khi chưa kết nối, tiền cọc về kênh của nền tảng và nền tảng sẽ chuyển lại cho bạn theo từng đợt.
-                      Kết nối PayOS riêng để nhận tiền ngay.
+                      Cụm sân này <strong>chưa nhận đặt sân online</strong> cho tới khi bạn kết nối PayOS ở trên.
                     </span>
                   </div>
                 )}
@@ -103,7 +100,7 @@ export default async function OwnerPaymentsPage() {
                 {b && Number(b.collected) > 0 && (
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div className="p-3 rounded-lg bg-muted/50">
-                      <div className="text-xs text-muted-foreground">Nền tảng đã thu hộ</div>
+                      <div className="text-xs text-muted-foreground">Cọc cũ nền tảng đã thu hộ</div>
                       <div className="font-bold text-foreground">{formatVnd(b.collected)}</div>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/50">

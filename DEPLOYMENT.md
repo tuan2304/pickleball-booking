@@ -171,20 +171,20 @@ Có **hai cách nhận tiền cọc**, hệ thống tự chọn theo từng cụ
 | `PAYMENT_SETTINGS_ENCRYPTION_KEY` | **Có** | Khóa mã hóa khóa PayOS của chủ sân. Tạo: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. **Đừng đổi** sau khi chủ sân đã lưu khóa |
 | `BILLING_ENFORCED_FROM` | Không | Ngày bắt đầu giới hạn gói Free, vd `2027-01-01T00:00:00+07:00`. **Để trống = miễn phí hoàn toàn** |
 | `PRO_PLAN_PRICE_VND` | Không | Giá gói Pro mỗi tháng. Mặc định 199000 chỉ là giá tạm, hãy tự đặt |
-| `PAYOS_*` (3 biến) | Có, nếu còn dùng kênh nền tảng | Cũng dùng để nhận tiền thuê bao |
+| `PAYOS_*` (3 biến) | **Có** | Kênh PayOS của bạn, chỉ dùng để thu tiền thuê gói Pro. Cọc đặt sân không đi qua kênh này |
 
 3. **Tạo tài khoản quản trị** (vai trò `admin` không tự đăng ký được). Chạy trong Supabase → SQL Editor, thay email của bạn:
 ```sql
 update public.profiles set role = 'admin'
 where id = (select id from auth.users where email = 'EMAIL_CUA_BAN');
 ```
-   Sau đó vào `https://<tên-miền>/admin` để ghi nhận chi trả cho chủ sân và cấp gói thủ công.
+   Sau đó vào `https://<tên-miền>/admin` để xem thống kê, trả lời hỗ trợ, gửi thông báo và cấp gói thủ công (`/admin/finance`).
 4. **Tài khoản mẫu:** `cd web && node --env-file=.env.local scripts/secure-seed-accounts.mjs` (xem trước), thêm `--apply` để đổi mật khẩu ngẫu nhiên. Đã chạy `--apply` trên database hiện tại ngày 22/10/2026.
 
-### Chạy thử với vài chủ sân quen (chưa kết nối PayOS riêng)
-- Điền 3 khóa PayOS của nền tảng, đăng ký webhook như phần "Cài đặt PayOS" bên trên.
-- Mỗi khoản cọc do nền tảng giữ hộ hiện ở `/admin` mục **Tiền cọc nền tảng đang thu hộ**. Bạn chuyển khoản cho chủ sân rồi bấm **Ghi nhận đã chuyển**; chủ sân thấy số dư ở **Nhận thanh toán**.
-- Khoản "đã nhận nhưng mất sân" (`needs_refund`) và khoản giả lập **không** được tính cho chủ sân.
+### Chủ sân nhận tiền cọc (bắt buộc kết nối PayOS riêng)
+- Từ 23/10/2026 cụm sân **chỉ nhận đặt sân online khi chủ sân đã kết nối PayOS riêng** ở mục **Nhận thanh toán**; tiền cọc về thẳng tài khoản của họ. Nền tảng không còn thu hộ cọc, nên không phải đối soát hay chuyển tiền lại.
+- Cụm sân chưa kết nối hiện thông báo "chưa nhận đặt sân online" với khách và có huy hiệu tương ứng ở `/admin/finance`.
+- Các khoản cọc cũ do nền tảng đã thu hộ (nếu có) vẫn hiện ở `/admin/finance` để ghi nhận chi trả. Khoản "đã nhận nhưng mất sân" (`needs_refund`) và khoản giả lập **không** được tính cho chủ sân.
 
 ### Thuê bao
 - Chưa đặt `BILLING_ENFORCED_FROM` thì **không có giới hạn nào**; chủ sân vẫn thấy trang **Gói dịch vụ** và có thể mua Pro thử.
