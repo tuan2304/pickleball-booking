@@ -30,13 +30,17 @@ Chọn giờ trống, cọc bằng mã VietQR, rủ thêm người chơi vào k�
 - Chọn khung giờ trên lịch, hệ thống tự tính giá theo khung giờ và tiền cọc, giữ chỗ 15 phút có đồng hồ đếm ngược.
 - Cọc bằng mã QR, trạng thái cập nhật ngay khi chuyển khoản xong, không cần tải lại trang.
 - Mở kèo giao lưu ngay lúc đặt sân: chọn trình độ, chia tiền sân, chủ kèo duyệt từng người, chat trong kèo.
+- Tự hủy đơn theo chính sách của cụm sân: hủy sớm được hoàn cọc, hủy muộn mất cọc, chủ sân hủy thì luôn hoàn đủ. Theo dõi trạng thái hoàn cọc ngay trong đơn.
+- Hồ sơ người chơi: ảnh đại diện, trình độ, số điện thoại và trang hồ sơ công khai có thống kê.
 - Thông báo realtime, đánh giá sân, gửi yêu cầu hỗ trợ.
+- Đặt sân, thanh toán cọc, hủy đơn và sửa hồ sơ ngay trên ứng dụng mobile.
 
 **Chủ sân**
-- Quản lý cụm sân, sân con, ảnh, giờ mở cửa và vị trí.
+- Quản lý cụm sân, sân con, giờ mở cửa và vị trí; tải ảnh sân trực tiếp (JPG, PNG, WebP), chọn ảnh bìa.
 - Bảng giá linh hoạt theo khung giờ và ngày trong tuần, tự đặt phần trăm cọc cho từng sân.
 - Lịch đặt realtime, nhận thông báo khi có khách cọc.
-- Tự kết nối kênh PayOS của mình để tiền cọc về thẳng tài khoản ngân hàng, không qua trung gian.
+- Hai cách nhận cọc, tiền luôn về thẳng tài khoản ngân hàng của chủ sân: kết nối PayOS riêng (tự xác nhận) hoặc khai báo tài khoản để khách chuyển khoản theo VietQR rồi chủ sân xác nhận thủ công.
+- Tự đặt chính sách hủy sân (số giờ hủy miễn phí) và quản lý danh sách đơn cần hoàn cọc.
 - Gói Free và Pro cho cụm sân.
 
 **Quản trị nền tảng**
@@ -105,7 +109,7 @@ Các lệnh khác, chạy trong `web/`:
 | `npm run db:test` | Áp migration lên Postgres tạm trong Docker và chạy test RLS |
 | `npm run build` | Build production |
 
-Ứng dụng mobile: `cd mobile && npm install && npm start`.
+Ứng dụng mobile: `cd mobile && npm install`, sao chép `.env.example` thành `.env` rồi điền thêm `EXPO_PUBLIC_API_URL` (địa chỉ máy chủ web, dùng để giữ chỗ, hủy đơn và báo đã chuyển khoản), sau đó `npm start`. Phiên đăng nhập được lưu trong Keychain/Keystore. Logic tính giá, giờ, hủy đơn và hồ sơ được dùng chung với web qua `npm run sync:mobile` (trong `web/`); một test sẽ báo lỗi nếu hai bản lệch nhau.
 
 ## Luồng hoạt động
 
@@ -359,7 +363,7 @@ Sơ đồ chỉ vẽ các bảng lõi. Ngoài ra còn các bảng cho thông bá
 
 ## Hướng phát triển
 
-- Chính sách hủy sân và hoàn cọc.
-- Thêm nhà cung cấp thanh toán khác ngoài PayOS.
-- Đặt sân ngay trên ứng dụng mobile, hồ sơ người chơi, ảnh sân do chủ sân tải lên.
-- SEO và phân trang danh sách sân khi số lượng lớn.
+- Hoàn cọc tự động qua API của nhà cung cấp thanh toán (hiện chủ sân tự chuyển trả rồi xác nhận).
+- Thêm cổng thanh toán tự động khác (MoMo, VNPay...) bên cạnh PayOS và chuyển khoản thủ công.
+- Mobile: tải ảnh đại diện, mở kèo ngay khi đặt sân, thông báo đẩy.
+- Nội dung bảo mật (CSP) có nonce cho script, kiểm thử đầu-cuối (Playwright) chạy trong CI.

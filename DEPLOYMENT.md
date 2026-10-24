@@ -182,7 +182,7 @@ where id = (select id from auth.users where email = 'EMAIL_CUA_BAN');
 4. **Tài khoản mẫu:** `cd web && node --env-file=.env.local scripts/secure-seed-accounts.mjs` (xem trước), thêm `--apply` để đổi mật khẩu ngẫu nhiên. Đã chạy `--apply` trên database hiện tại ngày 22/10/2026.
 
 ### Chủ sân nhận tiền cọc (bắt buộc kết nối PayOS riêng)
-- Từ 23/10/2026 cụm sân **chỉ nhận đặt sân online khi chủ sân đã kết nối PayOS riêng** ở mục **Nhận thanh toán**; tiền cọc về thẳng tài khoản của họ. Nền tảng không còn thu hộ cọc, nên không phải đối soát hay chuyển tiền lại.
+- Cụm sân **chỉ nhận đặt sân online khi chủ sân đã kết nối PayOS riêng hoặc khai báo tài khoản chuyển khoản thủ công** ở mục **Nhận thanh toán**; tiền cọc về thẳng tài khoản của họ (xem mục "Hủy sân, chuyển khoản thủ công, ảnh và hồ sơ" bên dưới). Nền tảng không còn thu hộ cọc, nên không phải đối soát hay chuyển tiền lại.
 - Cụm sân chưa kết nối hiện thông báo "chưa nhận đặt sân online" với khách và có huy hiệu tương ứng ở `/admin/finance` (trang Gói dịch vụ).
 - Quản trị không còn phải đối soát hay chuyển tiền cọc: màn ghi nhận chi trả đã bỏ. Bảng `payouts` và hàm `club_balances` đã được gỡ khỏi database (dòng sổ cũ được sao lưu ngày 24/10/2026).
 
@@ -190,6 +190,39 @@ where id = (select id from auth.users where email = 'EMAIL_CUA_BAN');
 - Chưa đặt `BILLING_ENFORCED_FROM` thì **không có giới hạn nào**; chủ sân vẫn thấy trang **Gói dịch vụ** và có thể mua Pro thử.
 - Từ ngày bắt đầu: gói Free tối đa 2 sân con đang hoạt động; sân thứ 3 trở đi không nhận đặt cho đến khi nâng Pro. Sân không bị xóa.
 - Chủ sân trả thuê bao qua QR của **kênh PayOS nền tảng**; webhook tự gia hạn. Có thể cấp thủ công ở `/admin`.
+
+## 🔁 Hủy sân, chuyển khoản thủ công, ảnh sân, hồ sơ và đặt sân trên mobile
+
+### Thứ tự triển khai (quan trọng)
+1. **Áp migration trước, deploy code sau.** Code mới đọc các cột và bảng mới (nếu thiếu, trang "Lịch đặt của tôi" và trang thanh toán sẽ lỗi). Trong thư mục dự án chạy `supabase db push`; các migration `20261028` đến `20261101` chỉ thêm mới, không xóa hay sửa dữ liệu cũ:
+
+| Migration | Thêm gì |
+| :-- | :-- |
+| `20261028000000_rate_limits` | Bảng và hàm giới hạn tần suất. Code vẫn chạy nếu chưa áp (bỏ qua giới hạn) |
+| `20261029000000_cancellation_refunds` | `clubs.free_cancel_hours`, các cột hủy và hoàn cọc của `bookings` |
+| `20261030000000_manual_bank_transfer` | Bảng `club_bank_accounts`, cờ `clubs.accepts_manual_transfer` |
+| `20261031000000_storage_images` | Bucket `club-images` và `avatars` cùng chính sách thư mục riêng |
+| `20261101000000_profile_tools` | Hàm `get_my_profile()` và `player_public_stats()` |
+
+2. Sau đó mới đẩy code lên `master` để Vercel deploy.
+3. Chạy `cd web && npm run db:types` để tạo lại `src/types/supabase.generated.ts` từ database thật (bản trong repo đang được cập nhật tay cho các cột mới).
+
+### Hủy sân và hoàn cọc
+- Mỗi cụm sân đặt **số giờ hủy miễn phí** ở **Nhận thanh toán** (mặc định 24 giờ). Người chơi hủy trước hạn được hoàn đủ cọc, muộn hơn thì mất cọc; chủ sân hủy thì luôn hoàn đủ.
+- Tiền cọc nằm ở tài khoản của chủ sân nên **chủ sân tự chuyển trả** rồi bấm **Đã hoàn cọc** ở mục **Hoàn cọc**. Hệ thống không tự hoàn tiền.
+
+### Chuyển khoản thủ công
+- Chủ sân chọn ngân hàng, nhập số tài khoản và tên chủ tài khoản. Khách nhận mã VietQR kèm số tiền và nội dung `SPORT <mã đơn>`, bấm **Tôi đã chuyển khoản**; chủ sân nhận thông báo, đối chiếu sao kê rồi bấm **Xác nhận** ở **Lịch đặt sân**.
+- Đơn chuyển khoản giữ chỗ 60 phút, kéo dài tối đa 3 giờ (không quá giờ chơi) sau khi khách báo đã chuyển. PayOS riêng đã kết nối thì được ưu tiên.
+
+### Ảnh sân và ảnh đại diện
+- Tải thẳng lên Supabase Storage (bucket `club-images` tối đa 5 MB, `avatars` tối đa 2 MB; chỉ JPG, PNG, WebP, không nhận SVG). Mỗi chủ sân và mỗi người chỉ ghi được vào thư mục của mình.
+- `next.config.ts` chỉ cho trình tối ưu ảnh nhận đúng project Supabase của bạn (lấy từ `NEXT_PUBLIC_SUPABASE_URL`).
+
+### Ứng dụng mobile
+- Đặt `EXPO_PUBLIC_API_URL` trong `mobile/.env` là địa chỉ web đã deploy (không có dấu `/` cuối). Mobile giữ chỗ, hủy đơn và báo đã chuyển khoản qua `/api/mobile/*`, xác thực bằng token đăng nhập Supabase; giá luôn do server tính.
+- Cài `expo-secure-store` (đã có trong `package.json`). Phiên đăng nhập cũ trong AsyncStorage tự được chuyển sang kho an toàn lần mở app đầu tiên.
+- Chạy `npm run sync:mobile` trong `web/` mỗi khi sửa `datetime.ts`, `pricing.ts`, `booking-slots.ts`, `cancellation.ts` hoặc `profile.ts`, vì các file này được sao chép sang `mobile/src/shared/`.
 
 ## 🗺️ Bản đồ Google và chỉ đường
 
