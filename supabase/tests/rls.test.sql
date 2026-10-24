@@ -240,6 +240,58 @@ SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT * FROM 
 SELECT t(NULL,'anon',$$SELECT * FROM rate_limit_hit('x',3600,5)$$,'ERR','khách không gọi được hàm giới hạn');
 SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT count(*)::text FROM rate_limits$$,'ERR','người dùng không đọc được bảng đếm');
 
+-- ---------------------------------------------------------------- 13. Chính sách hủy sân và hoàn cọc
+INSERT INTO bookings(id,court_id,user_id,start_time,end_time,total_price,deposit_amount,status)
+ VALUES ('b2000000-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222','c0000000-0000-0000-0000-00000000000c',now()+interval '40 day',now()+interval '40 day 1 hour',100000,30000,'confirmed');
+SELECT t(NULL,'postgres',$$SELECT free_cancel_hours::text FROM clubs WHERE id='11111111-1111-1111-1111-111111111111'$$,'24','cụm sân mới mặc định hủy miễn phí trước 24 giờ');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$WITH x AS (UPDATE clubs SET free_cancel_hours=48 WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 1) SELECT count(*)::text FROM x$$,'1','chủ sân đặt được số giờ hủy miễn phí');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$UPDATE clubs SET free_cancel_hours=500 WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 'x'$$,'ERR','số giờ vượt 168 bị chặn');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$UPDATE clubs SET free_cancel_hours=-1 WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 'x'$$,'ERR','số giờ âm bị chặn');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$WITH x AS (UPDATE clubs SET free_cancel_hours=0 WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 1) SELECT count(*)::text FROM x$$,'0','chủ sân khác không sửa được chính sách hủy');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$WITH x AS (UPDATE clubs SET free_cancel_hours=0 WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 1) SELECT count(*)::text FROM x$$,'0','người chơi không sửa được chính sách hủy');
+SELECT t(NULL,'postgres',$$SELECT free_cancel_hours::text FROM clubs WHERE id='11111111-1111-1111-1111-111111111111'$$,'48','chính sách giữ nguyên giá trị chủ sân đặt');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$UPDATE bookings SET status='cancelled', refund_status='refunded', refund_amount=30000 WHERE id='b2000000-0000-0000-0000-000000000001' RETURNING 'x'$$,'ERR','người chơi tự ghi hoàn cọc bị chặn');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$UPDATE bookings SET refund_status='refunded', refund_amount=30000 WHERE id='b2000000-0000-0000-0000-000000000001' RETURNING 'x'$$,'ERR','chủ sân tự ghi trực tiếp hoàn cọc bị chặn (phải qua server)');
+SELECT t(NULL,'postgres',$$UPDATE bookings SET status='cancelled', refund_status='pending', refund_amount=0 WHERE id='b2000000-0000-0000-0000-000000000001' RETURNING 'x'$$,'ERR','đang chờ hoàn cọc mà số tiền 0 bị ràng buộc chặn');
+SELECT t(NULL,'postgres',$$UPDATE bookings SET cancelled_by='ai-do' WHERE id='b2000000-0000-0000-0000-000000000001' RETURNING 'x'$$,'ERR','người hủy ngoài player/owner/system bị chặn');
+SELECT t(NULL,'postgres',$$UPDATE bookings SET refund_status='sai' WHERE id='b2000000-0000-0000-0000-000000000001' RETURNING 'x'$$,'ERR','trạng thái hoàn cọc lạ bị chặn');
+SELECT t(NULL,'service_role',$$WITH x AS (UPDATE bookings SET status='cancelled', cancelled_by='player', cancelled_at=now(), refund_status='pending', refund_amount=30000 WHERE id='b2000000-0000-0000-0000-000000000001' RETURNING 1) SELECT count(*)::text FROM x$$,'1','server ghi được thông tin hủy và hoàn cọc');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT refund_status||'/'||refund_amount::text FROM bookings WHERE id='b2000000-0000-0000-0000-000000000001'$$,'pending/30000','người đặt xem được trạng thái hoàn cọc của mình');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT refund_status FROM bookings WHERE id='b2000000-0000-0000-0000-000000000001'$$,'pending','chủ sân xem được đơn cần hoàn cọc của cụm sân mình');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$SELECT count(*)::text FROM bookings WHERE refund_status='pending'$$,'0','chủ sân khác không thấy đơn cần hoàn cọc');
+
+-- ---------------------------------------------------------------- 14. Chuyển khoản thủ công
+INSERT INTO club_bank_accounts(club_id,bank_bin,account_number,account_name) VALUES ('11111111-1111-1111-1111-111111111111','970422','0123456789','NGUYEN VAN A');
+SELECT t(NULL,'postgres',$$SELECT accepts_manual_transfer::text FROM clubs WHERE id='11111111-1111-1111-1111-111111111111'$$,'false','cờ nhận chuyển khoản mặc định tắt');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$UPDATE clubs SET accepts_manual_transfer=true WHERE id='11111111-1111-1111-1111-111111111111' RETURNING 'x'$$,'ERR','chủ sân không tự bật cờ nhận chuyển khoản');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT account_number FROM club_bank_accounts$$,'0123456789','chủ sân xem được tài khoản ngân hàng của mình');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$SELECT count(*)::text FROM club_bank_accounts$$,'0','chủ sân khác không thấy tài khoản ngân hàng');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT count(*)::text FROM club_bank_accounts$$,'0','người chơi không đọc được bảng tài khoản ngân hàng');
+SELECT t(NULL,'anon',$$SELECT count(*)::text FROM club_bank_accounts$$,'ERR','khách không đọc được bảng tài khoản ngân hàng');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$UPDATE club_bank_accounts SET account_number='999999' RETURNING 'x'$$,'ERR','chủ sân không tự sửa trực tiếp bảng tài khoản (phải qua server)');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$INSERT INTO club_bank_accounts(club_id,bank_bin,account_number,account_name) VALUES ((SELECT id FROM clubs WHERE name='Hop le'),'970422','0123456789','X Y') RETURNING 'x'$$,'ERR','chủ sân không tự thêm tài khoản trực tiếp');
+SELECT t(NULL,'service_role',$$INSERT INTO club_bank_accounts(club_id,bank_bin,account_number,account_name) VALUES ((SELECT id FROM clubs WHERE name='Hop le'),'12','0123456789','AB') RETURNING 'x'$$,'ERR','BIN sai định dạng bị chặn');
+SELECT t(NULL,'service_role',$$INSERT INTO club_bank_accounts(club_id,bank_bin,account_number,account_name) VALUES ((SELECT id FROM clubs WHERE name='Hop le'),'970422','abc123','AB') RETURNING 'x'$$,'ERR','số tài khoản có chữ bị chặn');
+SELECT t(NULL,'service_role',$$INSERT INTO club_bank_accounts(club_id,bank_bin,account_number,account_name) VALUES ((SELECT id FROM clubs WHERE name='Hop le'),'970422','0123456789','A') RETURNING 'x'$$,'ERR','tên chủ tài khoản quá ngắn bị chặn');
+SELECT t(NULL,'service_role',$$WITH x AS (INSERT INTO club_bank_accounts(club_id,bank_bin,account_number,account_name) VALUES ((SELECT id FROM clubs WHERE name='Hop le'),'970436','0987654321','TRAN THI B') RETURNING 1) SELECT count(*)::text FROM x$$,'1','server thêm được tài khoản hợp lệ');
+
+-- ---------------------------------------------------------------- 15. Kho ảnh (storage)
+SELECT t(NULL,'postgres',$$SELECT count(*)::text FROM storage.buckets WHERE id IN ('club-images','avatars')$$,'2','đã tạo hai bucket ảnh');
+SELECT t(NULL,'postgres',$$SELECT (NOT ('image/svg+xml' = ANY(allowed_mime_types)) AND file_size_limit <= 5242880)::text FROM storage.buckets WHERE id='club-images'$$,'true','ảnh cụm sân không nhận SVG và giới hạn 5 MB');
+SELECT t(NULL,'postgres',$$SELECT (NOT ('image/svg+xml' = ANY(allowed_mime_types)) AND file_size_limit <= 2097152)::text FROM storage.buckets WHERE id='avatars'$$,'true','ảnh đại diện không nhận SVG và giới hạn 2 MB');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$WITH x AS (INSERT INTO storage.objects(bucket_id,name,owner) VALUES ('club-images','11111111-1111-1111-1111-111111111111/a.jpg',auth.uid()) RETURNING 1) SELECT count(*)::text FROM x$$,'1','chủ sân tải ảnh vào thư mục cụm sân của mình');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$INSERT INTO storage.objects(bucket_id,name,owner) VALUES ('club-images','11111111-1111-1111-1111-111111111111/evil.jpg',auth.uid()) RETURNING 'x'$$,'ERR','chủ sân khác không tải ảnh vào cụm sân này');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$INSERT INTO storage.objects(bucket_id,name,owner) VALUES ('club-images','11111111-1111-1111-1111-111111111111/evil.jpg',auth.uid()) RETURNING 'x'$$,'ERR','người chơi không tải ảnh lên cụm sân');
+SELECT t(NULL,'anon',$$INSERT INTO storage.objects(bucket_id,name) VALUES ('club-images','11111111-1111-1111-1111-111111111111/evil.jpg') RETURNING 'x'$$,'ERR','khách không tải ảnh lên');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$INSERT INTO storage.objects(bucket_id,name,owner) VALUES ('club-images','22222222-2222-2222-2222-222222222222/a.jpg',auth.uid()) RETURNING 'x'$$,'ERR','không tải ảnh vào thư mục có id không phải cụm sân của mình');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$INSERT INTO storage.objects(bucket_id,name,owner) VALUES ('club-images','khong-co-thu-muc.jpg',auth.uid()) RETURNING 'x'$$,'ERR','tải ảnh không nằm trong thư mục cụm sân bị chặn');
+SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$WITH x AS (DELETE FROM storage.objects WHERE bucket_id='club-images' RETURNING 1) SELECT count(*)::text FROM x$$,'0','chủ sân khác không xóa được ảnh cụm sân này');
+SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$WITH x AS (DELETE FROM storage.objects WHERE bucket_id='club-images' RETURNING 1) SELECT count(*)::text FROM x$$,'1','chủ sân xóa được ảnh của cụm sân mình');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$WITH x AS (INSERT INTO storage.objects(bucket_id,name,owner) VALUES ('avatars','c0000000-0000-0000-0000-00000000000c/me.png',auth.uid()) RETURNING 1) SELECT count(*)::text FROM x$$,'1','người dùng tải ảnh đại diện vào thư mục của mình');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$INSERT INTO storage.objects(bucket_id,name,owner) VALUES ('avatars','d0000000-0000-0000-0000-00000000000d/me.png',auth.uid()) RETURNING 'x'$$,'ERR','không tải ảnh đại diện vào thư mục của người khác');
+SELECT t('b0000000-0000-0000-0000-00000000000b','authenticated',$$WITH x AS (DELETE FROM storage.objects WHERE bucket_id='avatars' RETURNING 1) SELECT count(*)::text FROM x$$,'0','người khác không xóa được ảnh đại diện của mình');
+SELECT t(NULL,'anon',$$INSERT INTO storage.objects(bucket_id,name) VALUES ('avatars','c0000000-0000-0000-0000-00000000000c/x.png') RETURNING 'x'$$,'ERR','khách không tải ảnh đại diện');
+
 -- ---------------------------------------------------------------- Tổng kết
 SELECT CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END AS ket_qua, label AS ca_kiem_thu, CASE WHEN ok THEN '' ELSE detail END AS chi_tiet FROM test_results ORDER BY ok, label;
 DO $$
