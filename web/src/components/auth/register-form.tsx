@@ -132,14 +132,14 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password">Mật khẩu (tối thiểu 6 ký tự)</Label>
+            <Label htmlFor="password">Mật khẩu (tối thiểu 8 ký tự)</Label>
             <Input
               id="password"
               name="password"
               type="password"
               placeholder="••••••••"
               required
-              minLength={6}
+              minLength={8}
               className="h-10 focus-visible:ring-emerald-500"
             />
           </div>

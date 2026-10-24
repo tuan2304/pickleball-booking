@@ -12,6 +12,7 @@ import { resolveClubChannel } from '@/lib/payment-channel'
 import { bookableCourtIds, courtLimit, isBillingEnforced } from '@/lib/billing'
 
 import { isMatchSkill } from '@/lib/constants'
+import { enforceRateLimit } from '@/lib/rate-limit'
 export interface MatchConfig {
   isOpenMatch: boolean
   title?: string
@@ -59,6 +60,8 @@ export async function createBooking(
     return { error: 'Vui lòng đăng nhập để tiến hành đặt sân' }
   }
 
+  const limited = await enforceRateLimit('booking', user.id)
+  if (limited) return { error: limited }
   // ---- 1. Kiểm tra thời gian ----
   const startDate = new Date(startTimeISO)
   const endDate = new Date(endTimeISO)

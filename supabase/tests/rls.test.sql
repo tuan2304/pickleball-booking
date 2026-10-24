@@ -229,6 +229,17 @@ SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT (count(
 -- 11c. anon không còn quyền ghi ở bất kỳ bảng nào
 SELECT t(NULL,'postgres',$$SELECT count(*)::text FROM information_schema.role_table_grants WHERE grantee='anon' AND table_schema='public' AND privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE')$$,'0','anon không giữ quyền ghi trên bảng nào của schema public');
 
+-- ---------------------------------------------------------------- 12. Giới hạn tần suất
+SELECT t(NULL,'service_role',$$SELECT allowed::text FROM rate_limit_hit('t1',3600,2)$$,'true','lần 1 trong ngưỡng được phép');
+SELECT t(NULL,'service_role',$$SELECT allowed::text FROM rate_limit_hit('t1',3600,2)$$,'true','lần 2 (đúng ngưỡng) vẫn được phép');
+SELECT t(NULL,'service_role',$$SELECT allowed::text FROM rate_limit_hit('t1',3600,2)$$,'false','lần 3 vượt ngưỡng bị chặn');
+SELECT t(NULL,'service_role',$$SELECT (retry_after BETWEEN 1 AND 3600)::text FROM rate_limit_hit('t1',3600,2)$$,'true','báo thời gian chờ hợp lệ');
+SELECT t(NULL,'service_role',$$SELECT allowed::text FROM rate_limit_hit('t2',3600,2)$$,'true','khóa khác đếm độc lập');
+SELECT t(NULL,'service_role',$$SELECT allowed::text FROM rate_limit_hit('t3',0,2)$$,'ERR','cửa sổ không hợp lệ bị từ chối');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT * FROM rate_limit_hit('x',3600,5)$$,'ERR','người dùng không gọi được hàm giới hạn');
+SELECT t(NULL,'anon',$$SELECT * FROM rate_limit_hit('x',3600,5)$$,'ERR','khách không gọi được hàm giới hạn');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT count(*)::text FROM rate_limits$$,'ERR','người dùng không đọc được bảng đếm');
+
 -- ---------------------------------------------------------------- Tổng kết
 SELECT CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END AS ket_qua, label AS ca_kiem_thu, CASE WHEN ok THEN '' ELSE detail END AS chi_tiet FROM test_results ORDER BY ok, label;
 DO $$

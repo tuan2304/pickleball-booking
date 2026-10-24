@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { ClubReview } from '@/types/database'
+import { enforceRateLimit } from '@/lib/rate-limit'
 
 export async function getClubReviews(clubId: string): Promise<ClubReview[]> {
   const supabase = await createClient()
@@ -53,6 +54,8 @@ export async function submitClubReview(
     return { error: 'Vui lòng đăng nhập để gửi đánh giá' }
   }
 
+  const limited = await enforceRateLimit('review', user.id)
+  if (limited) return { error: limited }
   const { data, error } = await supabase
     .from('club_reviews')
     .upsert(

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyAdmins, notifyUser } from '@/lib/notify'
+import { enforceRateLimit } from '@/lib/rate-limit'
 import {
   isTicketStatus,
   MAX_ACTIVE_TICKETS_PER_USER,
@@ -33,6 +34,8 @@ export async function createTicket(input: {
 }): Promise<{ error?: string; ticketId?: string }> {
   const actor = await currentActor()
   if (!actor) return { error: 'Vui lòng đăng nhập để gửi yêu cầu hỗ trợ' }
+  const limited = await enforceRateLimit('ticket', actor.user.id)
+  if (limited) return { error: limited }
 
   const parsed = validateNewTicket(input)
   if (!parsed.ok) return { error: parsed.error }
@@ -98,6 +101,8 @@ export async function createTicket(input: {
 export async function replyToTicket(ticketId: string, body: string): Promise<{ error?: string }> {
   const actor = await currentActor()
   if (!actor) return { error: 'Vui lòng đăng nhập' }
+  const limited = await enforceRateLimit('ticketReply', actor.user.id)
+  if (limited) return { error: limited }
 
   const parsed = validateReply(body)
   if (!parsed.ok) return { error: parsed.error }

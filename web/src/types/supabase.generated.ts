@@ -402,6 +402,11 @@ isOneToOne: false
 "gen_salt":
 { Args: { "": string }; Returns: string
                            },
+"rate_limit_hit":
+{ Args: { "p_key": string,"p_max": number,"p_window_seconds": number }; Returns: {
+              "allowed": boolean,"hit_count": number,"retry_after": number
+            }[]
+                           },
 "get_booking_contacts":
 { Args: { "p_booking_ids": (string)[] }; Returns: {
               "booking_id": string,"full_name": string,"phone_number": string | null

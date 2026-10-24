@@ -8,6 +8,7 @@ import { checkCourtAllowance } from '@/lib/club-limits'
 import { getClubDeletionBlocker, getCourtDeletionBlocker } from '@/lib/deletion-guards'
 import { requireClubOwner } from '@/lib/auth-guards'
 import { isValidLatLng } from '@/lib/maps'
+import { validatePricingRule } from '@/lib/pricing-rule'
 
 export async function createClub(formData: FormData) {
   const supabase = await createClient()
@@ -121,16 +122,17 @@ export async function createCourt(formData: FormData) {
 
 export async function createPricingRule(formData: FormData) {
   const supabase = await createClient()
-  const courtId = formData.get('courtId') as string
-  const name = formData.get('name') as string
-  const startTime = formData.get('startTime') as string
-  const endTime = formData.get('endTime') as string
-  const pricePerHour = Number(formData.get('pricePerHour'))
+  const parsed = validatePricingRule({
+    courtId: formData.get('courtId') as string | null,
+    name: formData.get('name') as string | null,
+    startTime: formData.get('startTime') as string | null,
+    endTime: formData.get('endTime') as string | null,
+    pricePerHour: Number(formData.get('pricePerHour')),
+  })
+  if (!parsed.ok) return { error: parsed.error }
+  const { courtId, name, startTime, endTime, pricePerHour } = parsed.value
 
-  if (!courtId || !name || !startTime || !endTime || !pricePerHour) {
-    return { error: 'Vui lòng nhập đầy đủ thông tin khung giá' }
-  }
-
+  // Quyền ghi được RLS kiểm tra: chỉ chủ của cụm sân chứa sân này mới chèn được
   const { error } = await supabase.from('court_pricing_rules').insert({
     court_id: courtId,
     name,

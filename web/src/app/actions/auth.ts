@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { UserRole } from '@/types/database'
+import { enforceRateLimit, enforceRateLimitByIp } from '@/lib/rate-limit'
 
 export type AuthResult = {
   error?: string
@@ -17,6 +18,11 @@ export async function login(formData: FormData): Promise<AuthResult> {
   if (!email || !password) {
     return { error: 'Vui lòng nhập đầy đủ email và mật khẩu' }
   }
+
+  // Hai lớp: theo IP (chặn dò nhiều tài khoản) và theo email (chặn dò mật khẩu của một tài khoản từ nhiều IP)
+  const limited =
+    (await enforceRateLimitByIp('loginByIp')) ?? (await enforceRateLimit('loginByEmail', email.trim().toLowerCase()))
+  if (limited) return { error: limited }
 
   const supabase = await createClient()
 
@@ -63,8 +69,11 @@ export async function register(formData: FormData): Promise<AuthResult> {
     return { error: 'Vui lòng điền các thông tin bắt buộc (họ tên, email, mật khẩu)' }
   }
 
-  if (password.length < 6) {
-    return { error: 'Mật khẩu phải có ít nhất 6 ký tự' }
+  const limited = await enforceRateLimitByIp('registerByIp')
+  if (limited) return { error: limited }
+
+  if (password.length < 8) {
+    return { error: 'Mật khẩu phải có ít nhất 8 ký tự' }
   }
 
   const supabase = await createClient()

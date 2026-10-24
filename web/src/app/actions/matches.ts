@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyUser } from '@/lib/notify'
 
 import { isMatchSkill } from '@/lib/constants'
+import { enforceRateLimit } from '@/lib/rate-limit'
 export interface CreateMatchInput {
   bookingId: string
   title: string
@@ -31,6 +32,8 @@ export async function createMatch(input: CreateMatchInput) {
     return { error: 'Vui lòng đăng nhập để tạo bài ghép kèo' }
   }
 
+  const limited = await enforceRateLimit('createMatch', user.id)
+  if (limited) return { error: limited }
   const title = input.title?.trim()
   if (!title) return { error: 'Vui lòng nhập tên kèo' }
 
@@ -118,6 +121,8 @@ export async function joinMatch(matchId: string, message?: string) {
     return { error: 'Vui lòng đăng nhập để gửi yêu cầu tham gia' }
   }
 
+  const limited = await enforceRateLimit('joinMatch', user.id)
+  if (limited) return { error: limited }
   const admin = createAdminClient()
 
   const { data: match, error: matchErr } = await admin

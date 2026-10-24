@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { MatchMessage } from '@/types/database'
+import { enforceRateLimit } from '@/lib/rate-limit'
 
 export async function getMatchMessages(matchId: string): Promise<MatchMessage[]> {
   const supabase = await createClient()
@@ -46,6 +47,8 @@ export async function sendMatchMessage(matchId: string, content: string) {
     return { error: 'Vui lòng đăng nhập để gửi tin nhắn' }
   }
 
+  const limited = await enforceRateLimit('chat', user.id)
+  if (limited) return { error: limited }
   const { data, error } = await supabase
     .from('match_messages')
     .insert({
