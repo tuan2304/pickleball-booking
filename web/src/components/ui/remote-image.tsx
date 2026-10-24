@@ -1,14 +1,5 @@
 import Image from 'next/image'
-
-// Khớp với images.remotePatterns trong next.config.ts
-function isOptimizable(src: string) {
-  try {
-    const { protocol, hostname } = new URL(src)
-    return protocol === 'https:' && (hostname === 'images.unsplash.com' || hostname.endsWith('.supabase.co'))
-  } catch {
-    return false
-  }
-}
+import { isOptimizableImage } from '@/lib/image-hosts'
 
 interface RemoteImageProps {
   src: string
@@ -24,7 +15,7 @@ interface RemoteImageProps {
  * Domain khác (chủ sân tự nhập URL) → giữ thẻ <img> để không bị lỗi.
  */
 export function RemoteImage({ src, alt, className, sizes, priority }: RemoteImageProps) {
-  if (isOptimizable(src)) {
+  if (isOptimizableImage(src)) {
     return <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className={className} />
   }
   // eslint-disable-next-line @next/next/no-img-element
