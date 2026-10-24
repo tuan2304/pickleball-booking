@@ -9,6 +9,8 @@ import ClubsScreen from '../screens/ClubsScreen'
 import ClubDetailScreen from '../screens/ClubDetailScreen'
 import MatchesScreen from '../screens/MatchesScreen'
 import MatchDetailScreen from '../screens/MatchDetailScreen'
+import BookingScreen from '../screens/BookingScreen'
+import BookingPaymentScreen from '../screens/BookingPaymentScreen'
 import MyBookingsScreen from '../screens/MyBookingsScreen'
 import NotificationsScreen from '../screens/NotificationsScreen'
 import ProfileScreen from '../screens/ProfileScreen'
@@ -116,6 +118,8 @@ export default function RootNavigator() {
         <Stack.Screen name="MainTabs" component={BottomTabs} />
         <Stack.Screen name="ClubDetail" component={ClubDetailScreen} />
         <Stack.Screen name="MatchDetail" component={MatchDetailScreen} />
+        <Stack.Screen name="Booking" component={BookingScreen} />
+        <Stack.Screen name="BookingPayment" component={BookingPaymentScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   )

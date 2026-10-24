@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "db:types": "supabase gen types typescript --linked --workdir .. > src/types/supabase.generated.ts",
     "db:test": "bash ../supabase/tests/run.sh",
+    "sync:mobile": "node scripts/sync-mobile-shared.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
     "payos:webhook": "node --env-file=.env.local scripts/register-payos-webhook.mjs",
     "brand:generate": "node scripts/generate-brand-assets.mjs"

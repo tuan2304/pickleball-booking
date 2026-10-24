@@ -1,4 +1,4 @@
-import { getVnParts } from '@/lib/datetime'
+import { getVnParts } from './datetime'
 
 export interface PricingRule {
   start_time: string

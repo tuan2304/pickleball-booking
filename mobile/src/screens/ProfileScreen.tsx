@@ -7,9 +7,13 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native'
 import { colors } from '../theme/colors'
 import { supabase } from '../lib/supabase'
+import AuthForm from '../components/AuthForm'
+import ProfileEditForm from '../components/ProfileEditForm'
+import { skillLabel } from '../shared/profile'
 import { Profile } from '../types'
 import { User, Shield, LogOut, CheckCircle, Smartphone } from 'lucide-react-native'
 
@@ -39,18 +43,28 @@ export default function ProfileScreen() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [switching, setSwitching] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [editing, setEditing] = useState(false)
 
   async function checkSession() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setCurrentUserEmail(session.user.email || null)
-        const { data } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url, role, skill_level, rating')
-          .eq('id', session.user.id)
-          .single()
-        setProfile(data)
+        // Số điện thoại bị khóa đọc trực tiếp; hàm này chỉ trả hồ sơ của chính mình (kể cả số điện thoại)
+        const { data: mine } = await supabase.rpc('get_my_profile')
+        if (mine && mine.length > 0) {
+          setProfile(mine[0] as Profile)
+          setPhone(mine[0].phone_number ?? '')
+        } else {
+          // Dự phòng khi hàm chưa có trên database: chỉ lấy các cột công khai
+          const { data } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url, role, skill_level, rating')
+            .eq('id', session.user.id)
+            .single()
+          setProfile(data)
+        }
       } else {
         setProfile(null)
         setCurrentUserEmail(null)
@@ -109,12 +123,17 @@ export default function ProfileScreen() {
       {profile ? (
         <View style={styles.profileCard}>
           <View style={styles.avatarLarge}>
-            <Text style={styles.avatarTextLarge}>
-              {profile.full_name?.charAt(0).toUpperCase() || 'U'}
-            </Text>
+            {profile.avatar_url && /^https?:\/\//i.test(profile.avatar_url) ? (
+              <Image source={{ uri: profile.avatar_url }} style={{ width: 72, height: 72, borderRadius: 36 }} />
+            ) : (
+              <Text style={styles.avatarTextLarge}>
+                {profile.full_name?.charAt(0).toUpperCase() || 'U'}
+              </Text>
+            )}
           </View>
           <Text style={styles.userName}>{profile.full_name}</Text>
           <Text style={styles.userEmail}>{currentUserEmail}</Text>
+          <Text style={styles.userEmail}>Trình độ: {skillLabel(profile.skill_level)}</Text>
 
           <View style={styles.roleBadge}>
             <Shield size={12} color={colors.primary} />
@@ -123,19 +142,33 @@ export default function ProfileScreen() {
             </Text>
           </View>
 
+          <TouchableOpacity style={styles.editBtn} onPress={() => setEditing((v) => !v)} accessibilityRole="button">
+            <Text style={styles.editText}>{editing ? 'Đóng chỉnh sửa' : 'Chỉnh sửa hồ sơ'}</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <LogOut size={16} color={colors.danger} />
             <Text style={styles.logoutText}>Đăng Xuất</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.notLoggedCard}>
-          <User size={48} color={colors.textMuted} />
-          <Text style={styles.notLoggedTitle}>Chưa đăng nhập</Text>
-          <Text style={styles.notLoggedDesc}>
-            Hãy chọn một trong các tài khoản mẫu bên dưới để thử nghiệm nhanh mọi tính năng!
-          </Text>
-        </View>
+        <AuthForm onSignedIn={checkSession} />
+      )}
+
+      {profile && editing && (
+        <ProfileEditForm
+          userId={profile.id}
+          initial={{
+            fullName: profile.full_name ?? '',
+            phone,
+            skillLevel: profile.skill_level ?? 'intermediate',
+          }}
+          onSaved={() => {
+            setEditing(false)
+            checkSession()
+          }}
+          onCancel={() => setEditing(false)}
+        />
       )}
 
       {/* Quick Account Switcher: chỉ có ở bản dev, bị loại khỏi bản release */}
@@ -200,6 +233,22 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  editBtn: {
+    minHeight: 44,
+    alignSelf: 'stretch',
+    marginTop: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primaryBorder,
+    backgroundColor: colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editText: {
+    color: colors.primary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,

@@ -29,7 +29,18 @@ export interface Club {
   amenities: string[] | null
   images: string[] | null
   is_active: boolean
+  /** Hủy trước chừng này giờ so với giờ chơi thì được hoàn cọc */
+  free_cancel_hours?: number
+  accepts_online_payment?: boolean
+  accepts_manual_transfer?: boolean
   courts?: Court[]
+}
+
+export interface PricingRule {
+  start_time: string
+  end_time: string
+  days_of_week: number[] | null
+  price_per_hour: number | string
 }
 
 export interface Court {
@@ -41,6 +52,7 @@ export interface Court {
   base_price_per_hour: number
   deposit_percentage: number
   is_active: boolean
+  court_pricing_rules?: PricingRule[]
   club?: Club
 }
 
@@ -96,6 +108,9 @@ export interface Booking {
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
   is_open_match: boolean
   note: string | null
+  /** 'none' | 'pending' (chờ chủ sân hoàn cọc) | 'refunded' */
+  refund_status?: string
+  refund_amount?: number
   court?: Court
 }
 

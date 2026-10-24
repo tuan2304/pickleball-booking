@@ -59,19 +59,7 @@ export default function ClubDetailScreen({ route, navigation }: any) {
   }, [clubId])
 
   function handleBookCourt(court: Court) {
-    Alert.alert(
-      'Đặt sân ' + court.name,
-      `Giá gốc: ${Number(court.base_price_per_hour).toLocaleString('vi-VN')} đ/h\nYêu cầu đặt cọc: ${court.deposit_percentage}%\n\nTính năng giữ chỗ và sinh mã VietQR PayOS tự động đang sẵn sàng.`,
-      [
-        { text: 'Đóng', style: 'cancel' },
-        {
-          text: 'Giữ Chỗ Ngay',
-          onPress: () => {
-            Alert.alert('Thành công', 'Hệ thống đã nhận yêu cầu đặt sân và chuyển hướng đến trang thanh toán VietQR!')
-          },
-        },
-      ]
-    )
+    navigation.navigate('Booking', { clubId, courtId: court.id })
   }
 
   if (loading || !club) {

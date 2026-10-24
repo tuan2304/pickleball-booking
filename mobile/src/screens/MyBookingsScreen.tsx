@@ -7,11 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native'
 import { colors } from '../theme/colors'
 import { supabase } from '../lib/supabase'
 import { Booking } from '../types'
-import { Calendar, Clock, MapPin, CheckCircle, AlertCircle } from 'lucide-react-native'
+import { Calendar, Clock, MapPin, CheckCircle, AlertCircle, XCircle } from 'lucide-react-native'
+import { apiPost } from '../lib/api'
+import { formatDate, formatTime as formatVnTime, formatVnd } from '../lib/format'
+import { decideCancellation, describeOutcome } from '../shared/cancellation'
 
 export default function MyBookingsScreen({ navigation }: any) {
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -37,7 +41,8 @@ export default function MyBookingsScreen({ navigation }: any) {
               name,
               address,
               district,
-              city
+              city,
+              free_cancel_hours
             )
           )
         `)
@@ -58,17 +63,50 @@ export default function MyBookingsScreen({ navigation }: any) {
     loadBookings()
   }, [])
 
+  // Giờ hiển thị theo giờ Việt Nam, không theo múi giờ của điện thoại
   function formatTime(iso: string) {
-    const d = new Date(iso)
-    const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-    const date = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`
-    return `${time} • ${date}`
+    return `${formatVnTime(iso)} • ${formatDate(iso)}`
+  }
+
+  function handleCancel(item: Booking) {
+    const decision = decideCancellation({
+      status: item.status,
+      start: new Date(item.start_time),
+      now: new Date(),
+      paidAmount: item.status === 'confirmed' ? Number(item.deposit_amount) : 0,
+      freeCancelHours: item.court?.club?.free_cancel_hours ?? 24,
+      by: 'player',
+    })
+    Alert.alert('Hủy đơn đặt sân?', describeOutcome(decision, formatVnd), [
+      { text: 'Giữ lại', style: 'cancel' },
+      {
+        text: 'Hủy đơn',
+        style: 'destructive',
+        onPress: async () => {
+          const res = await apiPost(`/api/mobile/bookings/${item.id}/cancel`)
+          if (!res.ok) {
+            Alert.alert('Không thể hủy', res.error)
+            return
+          }
+          loadBookings()
+        },
+      },
+    ])
   }
 
   function renderBookingItem({ item }: { item: Booking }) {
     const court = item.court
     const club = court?.club
     const isConfirmed = item.status === 'confirmed'
+    const isPending = item.status === 'pending'
+    const isCancelled = item.status === 'cancelled'
+    const canCancel = (isConfirmed || isPending) && new Date(item.start_time).getTime() > Date.now()
+    const refundLabel =
+      item.refund_status === 'pending'
+        ? `Chờ chủ sân hoàn cọc ${formatVnd(item.refund_amount)}`
+        : item.refund_status === 'refunded'
+          ? `Đã hoàn cọc ${formatVnd(item.refund_amount)}`
+          : null
 
     return (
       <View style={styles.card}>
@@ -85,16 +123,18 @@ export default function MyBookingsScreen({ navigation }: any) {
           >
             {isConfirmed ? (
               <CheckCircle size={12} color={colors.success} />
+            ) : isCancelled ? (
+              <XCircle size={12} color={colors.danger} />
             ) : (
               <AlertCircle size={12} color={colors.warning} />
             )}
             <Text
               style={[
                 styles.statusText,
-                { color: isConfirmed ? colors.success : colors.warning },
+                { color: isConfirmed ? colors.success : isCancelled ? colors.danger : colors.warning },
               ]}
             >
-              {isConfirmed ? 'Đã cọc' : 'Chờ cọc (15p)'}
+              {isConfirmed ? 'Đã cọc' : isCancelled ? 'Đã hủy' : 'Chờ cọc'}
             </Text>
           </View>
         </View>
@@ -135,6 +175,26 @@ export default function MyBookingsScreen({ navigation }: any) {
             </Text>
           </View>
         </View>
+
+        {refundLabel && <Text style={styles.refund}>{refundLabel}</Text>}
+
+        {(isPending || canCancel) && (
+          <View style={styles.actions}>
+            {isPending && (
+              <TouchableOpacity
+                style={styles.payBtn}
+                onPress={() => navigation.navigate('BookingPayment', { bookingId: item.id })}
+              >
+                <Text style={styles.payBtnText}>Thanh toán cọc</Text>
+              </TouchableOpacity>
+            )}
+            {canCancel && (
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => handleCancel(item)}>
+                <Text style={styles.cancelBtnText}>Hủy đơn</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
     )
   }
@@ -182,6 +242,44 @@ export default function MyBookingsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  refund: {
+    marginTop: 10,
+    color: colors.accent,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  payBtn: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  payBtnText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  cancelBtn: {
+    minHeight: 40,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: colors.danger,
+    fontWeight: '700',
+    fontSize: 13,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,

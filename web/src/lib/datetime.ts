@@ -3,19 +3,9 @@ export const VN_TIMEZONE = 'Asia/Ho_Chi_Minh'
 /** Việt Nam không có giờ mùa hè nên độ lệch cố định */
 const VN_OFFSET = '+07:00'
 
-const WEEKDAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
-
-const vnFormatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: VN_TIMEZONE,
-  weekday: 'short',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hourCycle: 'h23',
-})
+// Việt Nam cố định UTC+7 (không có giờ mùa hè) nên chỉ cần cộng 7 giờ rồi đọc theo UTC. Cách này không phụ thuộc
+// Intl/múi giờ của máy: chạy giống hệt trên server Node, trình duyệt và Hermes (ứng dụng mobile).
+const VN_OFFSET_MS = 7 * 60 * 60 * 1000
 
 export interface VnParts {
   /** 0 = Chủ nhật ... 6 = Thứ bảy */
@@ -28,16 +18,15 @@ export interface VnParts {
 }
 
 export function getVnParts(date: Date): VnParts {
-  const parts: Record<string, string> = {}
-  for (const p of vnFormatter.formatToParts(date)) {
-    if (p.type !== 'literal') parts[p.type] = p.value
-  }
-  const hour = parts.hour === '24' ? '00' : parts.hour
+  const d = new Date(date.getTime() + VN_OFFSET_MS)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const hour = d.getUTCHours()
+  const minute = d.getUTCMinutes()
   return {
-    dayOfWeek: WEEKDAY_INDEX[parts.weekday] ?? 0,
-    dateKey: `${parts.year}-${parts.month}-${parts.day}`,
-    time: `${hour}:${parts.minute}:${parts.second}`,
-    minutesOfDay: Number(hour) * 60 + Number(parts.minute),
+    dayOfWeek: d.getUTCDay(),
+    dateKey: `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`,
+    time: `${pad(hour)}:${pad(minute)}:${pad(d.getUTCSeconds())}`,
+    minutesOfDay: hour * 60 + minute,
   }
 }
 

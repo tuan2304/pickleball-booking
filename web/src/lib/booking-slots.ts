@@ -1,4 +1,4 @@
-import { getVnParts, vnDateTime } from '@/lib/datetime'
+import { getVnParts, vnDateTime } from './datetime'
 
 export interface BusySlot {
   court_id: string
