@@ -15,34 +15,12 @@ import AuthForm from '../components/AuthForm'
 import ProfileEditForm from '../components/ProfileEditForm'
 import { skillLabel } from '../shared/profile'
 import { Profile } from '../types'
-import { User, Shield, LogOut, CheckCircle, Smartphone } from 'lucide-react-native'
-
-const SAMPLE_USERS = [
-  {
-    role: 'owner',
-    email: 'owner@sportarena.vn',
-    name: 'Nguyễn Văn Chủ Sân (Owner)',
-    desc: 'Quản lý 3 cụm sân, xem timeline lịch & doanh thu',
-  },
-  {
-    role: 'player',
-    email: 'player1@sportarena.vn',
-    name: 'Trần Quốc Huy (Chủ Kèo)',
-    desc: 'Người mở kèo Pickleball đôi',
-  },
-  {
-    role: 'player',
-    email: 'player2@sportarena.vn',
-    name: 'Lê Hoàng Long (Ứng viên)',
-    desc: 'Đã tham gia kèo Pickleball giao lưu',
-  },
-]
+import { Shield, LogOut, Smartphone } from 'lucide-react-native'
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [switching, setSwitching] = useState(false)
   const [phone, setPhone] = useState('')
   const [editing, setEditing] = useState(false)
 
@@ -79,28 +57,6 @@ export default function ProfileScreen() {
   useEffect(() => {
     checkSession()
   }, [])
-
-  async function quickLogin(email: string) {
-    setSwitching(true)
-    try {
-      await supabase.auth.signOut()
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: process.env.EXPO_PUBLIC_DEV_PASSWORD ?? '',
-      })
-
-      if (error) {
-        Alert.alert('Lỗi đăng nhập', error.message)
-      } else {
-        Alert.alert('Thành công', `Đã chuyển sang tài khoản ${email}`)
-        await checkSession()
-      }
-    } catch (err: any) {
-      Alert.alert('Lỗi', err.message)
-    } finally {
-      setSwitching(false)
-    }
-  }
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -170,56 +126,6 @@ export default function ProfileScreen() {
           onCancel={() => setEditing(false)}
         />
       )}
-
-      {/* Quick Account Switcher: chỉ có ở bản dev, bị loại khỏi bản release */}
-      {__DEV__ && (<>
-      <Text style={styles.sectionTitle}>
-        Chuyển Nhanh Tài Khoản Thử Nghiệm ⚡
-      </Text>
-      <Text style={styles.sectionSub}>
-        Chọn tài khoản để trải nghiệm góc nhìn Chủ Sân hoặc Người Chơi ngay lập tức:
-      </Text>
-
-      <View style={styles.sampleList}>
-        {SAMPLE_USERS.map((user) => {
-          const isCurrent = currentUserEmail === user.email
-          return (
-            <TouchableOpacity
-              key={user.email}
-              style={[styles.sampleCard, isCurrent && styles.sampleCardActive]}
-              activeOpacity={0.8}
-              disabled={switching}
-              onPress={() => quickLogin(user.email)}
-            >
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={styles.sampleName}>{user.name}</Text>
-                  {isCurrent && <CheckCircle size={14} color={colors.success} />}
-                </View>
-                <Text style={styles.sampleEmail}>{user.email}</Text>
-                <Text style={styles.sampleDesc}>{user.desc}</Text>
-              </View>
-
-              <View
-                style={[
-                  styles.switchPill,
-                  isCurrent ? styles.switchPillActive : styles.switchPillInactive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.switchPillText,
-                    isCurrent && { color: colors.white },
-                  ]}
-                >
-                  {isCurrent ? 'Đang dùng' : 'Đăng nhập'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )
-        })}
-      </View>
-      </>)}
 
       {/* App Info Footer */}
       <View style={styles.appInfoBox}>
@@ -348,67 +254,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginTop: 6,
-  },
-  sectionSub: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: -8,
-  },
-  sampleList: {
-    gap: 10,
-  },
-  sampleCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    gap: 12,
-  },
-  sampleCardActive: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(5, 150, 105, 0.08)',
-  },
-  sampleName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-  },
-  sampleEmail: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  sampleDesc: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  switchPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  switchPillActive: {
-    backgroundColor: colors.primary,
-  },
-  switchPillInactive: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  switchPillText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: colors.textSecondary,
   },
   appInfoBox: {
     flexDirection: 'row',

@@ -242,4 +242,4 @@ Khách thấy bản đồ nhúng ở trang cụm sân, nút **Chỉ đường** 
 3. **Real-time:** mở 2 tab ẩn danh: tab 1 mở chi tiết kèo, tab 2 xin tham gia → danh sách tự cập nhật. Chỉ chủ kèo và thành viên đã duyệt mới thấy phòng chat.
 4. **Hết hạn giữ chỗ:** đặt sân rồi đóng tab, chờ hơn 15 phút → khung giờ tự mở lại (nhờ `pg_cron`).
 5. **Tài khoản mẫu:** các tài khoản seed (`@sportarena.vn`) chỉ dành cho môi trường dev. **Xóa hoặc đổi mật khẩu** trước khi mở cho người dùng thật, và dùng một project Supabase riêng cho production.
-6. **Mobile:** tạo `mobile/.env` từ `mobile/.env.example`. Nút "chuyển nhanh tài khoản" chỉ hiện ở bản dev (`__DEV__`).
+6. **Mobile:** tạo `mobile/.env` từ `mobile/.env.example`. Ứng dụng không có tài khoản mẫu hay nút đăng nhập nhanh; người dùng đăng nhập hoặc đăng ký ở tab Cá Nhân.
