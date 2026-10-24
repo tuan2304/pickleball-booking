@@ -70,6 +70,8 @@ export default async function BookingPage({ params }: BookingPageProps) {
             deposit_amount: Number(booking.deposit_amount),
             status: booking.status,
             expires_at: booking.expires_at,
+            refund_status: booking.refund_status,
+            refund_amount: Number(booking.refund_amount),
           }}
           payment={paymentData}
           simulationEnabled={isPaymentSimulationEnabled() && (paymentData as { metadata?: { simulated?: boolean } } | null)?.metadata?.simulated === true}

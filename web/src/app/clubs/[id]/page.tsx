@@ -13,8 +13,9 @@ import { MapEmbed } from '@/components/maps/map-embed'
 import { DirectionsLinks } from '@/components/maps/directions-links'
 import { fullAddress, hasCoordinates } from '@/lib/maps'
 import { bookableCourtIds, courtLimit, isBillingEnforced } from '@/lib/billing'
-import { MapPin, Clock, ArrowLeft, Sparkles } from 'lucide-react'
+import { MapPin, Clock, ArrowLeft, Sparkles, ShieldCheck } from 'lucide-react'
 import { resolveAppUrl } from '@/lib/app-url'
+import { describePolicy } from '@/lib/cancellation'
 import { clubDescription, clubJsonLd, serializeJsonLd, shareImage } from '@/lib/seo'
 
 interface ClubDetailPageProps {
@@ -99,7 +100,7 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
   const limit = courtLimit({ plan: club.plan, planUntil: club.plan_until, now, enforced: isBillingEnforced(now) })
   const allowedIds = bookableCourtIds(courts ?? [], limit)
   const bookableCourts = courtList.filter((c) => allowedIds.has(c.id))
-  const acceptsPayments = canAcceptBookings(club.accepts_online_payment)
+  const acceptsPayments = canAcceptBookings(club.accepts_online_payment, club.accepts_manual_transfer)
 
   const courtIds = bookableCourts.map((c) => c.id)
 
@@ -242,6 +243,15 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
             </p>
           </div>
 
+          {acceptsPayments && (
+            <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden />
+              <span>
+                <strong className="text-foreground">Chính sách hủy:</strong> {describePolicy(club.free_cancel_hours)}
+                {club.accepts_manual_transfer && !club.accepts_online_payment && ' Cụm sân nhận cọc bằng chuyển khoản, chủ sân sẽ xác nhận đơn thủ công.'}
+              </span>
+            </p>
+          )}
           {acceptsPayments ? (
             <TimeSlotPicker
               courts={bookableCourts}

@@ -1,4 +1,5 @@
 import { PayOS } from '@payos/node'
+import { buildVietQrImageUrl } from '@/lib/vietqr'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -63,21 +64,6 @@ export interface PaymentLinkResult {
   accountName: string
   paymentLinkId: string | null
   simulated: boolean
-}
-
-function buildVietQrImageUrl(p: {
-  bin: string
-  accountNumber: string
-  accountName: string
-  amount: number
-  description: string
-}) {
-  const qs = new URLSearchParams({
-    amount: String(p.amount),
-    addInfo: p.description,
-    accountName: p.accountName,
-  })
-  return `https://img.vietqr.io/image/${p.bin}-${p.accountNumber}-compact2.png?${qs.toString()}`
 }
 
 /**

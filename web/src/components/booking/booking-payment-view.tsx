@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { simulateDepositPayment, cancelExpiredBooking } from '@/app/actions/booking'
+import { cancelBooking, claimManualTransfer } from '@/app/actions/cancellation'
+import { useConfirm } from '@/components/ui/confirm-dialog'
+import { refundStatusLabel } from '@/lib/cancellation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,6 +35,8 @@ export interface BookingPaymentViewProps {
     deposit_amount: number
     status: string
     expires_at: string
+    refund_status?: string
+    refund_amount?: number
   }
   payment: {
     id: string
@@ -45,6 +50,9 @@ export interface BookingPaymentViewProps {
       account_number?: string
       account_name?: string
       description?: string
+      /** 'manual' = chuyển khoản thủ công, chủ sân tự xác nhận */
+      channel?: string
+      claimed_at?: string
     } | null
   } | null
   /** Chỉ true ở môi trường dev chưa cấu hình PayOS */
@@ -76,6 +84,11 @@ export function BookingPaymentView({
   const [currentStatus, setCurrentStatus] = useState<string>(booking.status)
   const [copied, setCopied] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<boolean>(false)
+  const [claimed, setClaimed] = useState<boolean>(Boolean(payment?.metadata?.claimed_at))
+  const [claiming, setClaiming] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const confirm = useConfirm()
+  const isManual = payment?.metadata?.channel === 'manual'
 
   // 1. Tính toán thời gian đếm ngược 15 phút
   const [timeLeft, setTimeLeft] = useState<number>(() => {
@@ -158,6 +171,10 @@ export function BookingPaymentView({
   const transferContent = bank?.description || (payment ? `SPORT ${payment.order_code}` : '')
   const qrUrl = payment?.qr_code_url || null
   const bankName = bankNameFromBin(bank?.bin)
+  const refundNote =
+    booking.refund_status && booking.refund_amount
+      ? refundStatusLabel(booking.refund_status, booking.refund_amount, formatVnd)
+      : null
 
   function copyText(text: string, type: string) {
     navigator.clipboard.writeText(text)
@@ -181,6 +198,43 @@ export function BookingPaymentView({
     } finally {
       setConfirming(false)
     }
+  }
+
+  // Khách đã chuyển khoản: báo chủ sân đối chiếu; server kéo dài thời gian giữ chỗ nên đọc lại hạn mới
+  async function handleClaimTransfer() {
+    setClaiming(true)
+    setError(null)
+    try {
+      const result = await claimManualTransfer(booking.id)
+      if (result.error) {
+        setError(result.error)
+        return
+      }
+      setClaimed(true)
+      const { data } = await createClient().from('bookings').select('expires_at').eq('id', booking.id).maybeSingle()
+      if (data?.expires_at) setTimeLeft(Math.max(0, Math.floor((new Date(data.expires_at).getTime() - Date.now()) / 1000)))
+    } catch {
+      setError('Không thể gửi thông báo, vui lòng thử lại')
+    } finally {
+      setClaiming(false)
+    }
+  }
+
+  async function handleCancel() {
+    const ok = await confirm({
+      title: 'Hủy đơn giữ chỗ này?',
+      description: 'Đơn chưa cọc nên không mất khoản nào. Khung giờ sẽ được nhả ra cho người khác.',
+      confirmText: 'Hủy đơn',
+      cancelText: 'Giữ lại',
+      destructive: true,
+    })
+    if (!ok) return
+    setCancelling(true)
+    setError(null)
+    const result = await cancelBooking(booking.id)
+    setCancelling(false)
+    if (result.error) setError(result.error)
+    else setCurrentStatus('cancelled')
   }
 
   // Giao diện khi đã cọc thành công
@@ -249,10 +303,13 @@ export function BookingPaymentView({
     return (
       <Card className="max-w-md mx-auto border-red-500/30 p-8 text-center space-y-4">
         <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
-        <h2 className="text-xl font-bold text-foreground">Đã Hết Thời Gian Giữ Chỗ</h2>
+        <h2 className="text-xl font-bold text-foreground">
+          {currentStatus === 'cancelled' && timeLeft > 0 ? 'Đơn Đã Được Hủy' : 'Đã Hết Thời Gian Giữ Chỗ'}
+        </h2>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Đơn giữ chỗ 15 phút đã quá hạn hoặc đã bị hủy. Sân đã được tự động giải phóng để người khác có thể đặt.
+          Đơn giữ chỗ đã quá hạn hoặc đã bị hủy. Sân đã được giải phóng để người khác có thể đặt.
         </p>
+        {refundNote && <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">{refundNote}</p>}
         <Link href="/clubs">
           <Button className="bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer font-bold">
             Tìm & Đặt Lại Khung Giờ Khác
@@ -385,10 +442,47 @@ export function BookingPaymentView({
             </>
           )}
 
+          {isManual && (
+            claimed ? (
+              <p role="status" className="text-xs text-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 p-3 leading-relaxed">
+                Đã báo cho chủ sân. Chủ sân sẽ đối chiếu sao kê và xác nhận đơn; trang này tự cập nhật khi được xác nhận.
+              </p>
+            ) : (
+              <Button
+                type="button"
+                disabled={claiming}
+                onClick={handleClaimTransfer}
+                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer"
+              >
+                {claiming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Đang gửi...
+                  </>
+                ) : (
+                  'Tôi đã chuyển khoản'
+                )}
+              </Button>
+            )
+          )}
+
+          {error && !simulationEnabled && <p role="alert" className="text-xs text-red-700 dark:text-red-400 text-center">{error}</p>}
+
           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Kênh Realtime đang hoạt động — Hệ thống tự động chuyển trang khi nhận tiền
+            {isManual
+              ? 'Chủ sân xác nhận thủ công — trang tự chuyển khi đơn được xác nhận'
+              : 'Kênh Realtime đang hoạt động — Hệ thống tự động chuyển trang khi nhận tiền'}
           </p>
+
+          <button
+            type="button"
+            disabled={cancelling}
+            onClick={handleCancel}
+            className="text-xs text-center text-muted-foreground underline underline-offset-2 hover:text-red-700 dark:hover:text-red-400 cursor-pointer disabled:opacity-50"
+          >
+            {cancelling ? 'Đang hủy...' : 'Hủy đơn giữ chỗ này'}
+          </button>
         </CardFooter>
       </Card>
 
@@ -450,7 +544,9 @@ export function BookingPaymentView({
             <ShieldCheck className="w-4 h-4" /> Chính Sách Giữ Chỗ
           </div>
           <p className="leading-relaxed">
-            Sân được bảo lưu trong 15 phút. Nếu trong khoảng thời gian này giao dịch cọc không hoàn tất, hệ thống sẽ tự động hủy đơn và mở sân cho người chơi khác.
+            {isManual
+              ? 'Sân được bảo lưu 60 phút, và được kéo dài thêm khi bạn báo đã chuyển khoản để chủ sân kịp đối chiếu. Quá hạn mà chưa xác nhận, hệ thống sẽ tự động hủy đơn và mở sân cho người khác.'
+              : 'Sân được bảo lưu trong 15 phút. Nếu trong khoảng thời gian này giao dịch cọc không hoàn tất, hệ thống sẽ tự động hủy đơn và mở sân cho người chơi khác.'}
           </p>
         </div>
       </div>

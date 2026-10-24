@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Tags,
   Wallet,
+  RotateCcw,
   Crown,
   LifeBuoy,
   LogOut,
@@ -44,6 +45,11 @@ const NAV_ITEMS = [
     label: 'Nhận thanh toán',
     href: '/owner/payments',
     icon: Wallet,
+  },
+  {
+    label: 'Hoàn cọc',
+    href: '/owner/refunds',
+    icon: RotateCcw,
   },
   {
     label: 'Gói dịch vụ',

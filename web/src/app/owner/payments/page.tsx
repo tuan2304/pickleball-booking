@@ -2,6 +2,8 @@ import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PaymentSettingsForm } from '@/components/owner/payment-settings-form'
+import { BankAccountForm } from '@/components/owner/bank-account-form'
+import { CancelPolicyForm } from '@/components/owner/cancel-policy-form'
 import { resolveAppUrl } from '@/lib/app-url'
 import { Wallet, Landmark } from 'lucide-react'
 
@@ -13,7 +15,7 @@ export default async function OwnerPaymentsPage() {
 
   const { data: clubs } = await supabase
     .from('clubs')
-    .select('id, name')
+    .select('id, name, free_cancel_hours')
     .eq('owner_id', user?.id ?? '')
     .order('created_at', { ascending: true })
   const clubList = clubs ?? []
@@ -26,6 +28,12 @@ export default async function OwnerPaymentsPage() {
     : { data: [] }
   const settingsByClub = new Map((settings ?? []).map((s) => [s.club_id, s]))
 
+  // Tài khoản ngân hàng chỉ chủ cụm sân đọc được (RLS), nên dùng client của người dùng
+  const { data: banks } = clubIds.length
+    ? await supabase.from('club_bank_accounts').select('club_id, bank_bin, account_number, account_name').in('club_id', clubIds)
+    : { data: [] }
+  const bankByClub = new Map((banks ?? []).map((b) => [b.club_id, b]))
+
   return (
     <div className="space-y-8 max-w-4xl">
       <div>
@@ -34,7 +42,7 @@ export default async function OwnerPaymentsPage() {
           Nhận thanh toán
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Kết nối kênh PayOS của bạn để nhận đặt sân online. Tiền cọc của khách chuyển <strong>thẳng vào tài khoản ngân hàng của bạn</strong>, SportArena không giữ hộ.
+          Kết nối kênh PayOS (tự động xác nhận) hoặc khai báo tài khoản để nhận cọc bằng chuyển khoản thủ công. Tiền cọc của khách chuyển <strong>thẳng vào tài khoản ngân hàng của bạn</strong>, SportArena không giữ hộ.
         </p>
       </div>
 
@@ -68,6 +76,7 @@ export default async function OwnerPaymentsPage() {
       ) : (
         clubList.map((club) => {
           const s = settingsByClub.get(club.id)
+          const bank = bankByClub.get(club.id)
           return (
             <Card key={club.id}>
               <CardHeader>
@@ -82,11 +91,23 @@ export default async function OwnerPaymentsPage() {
                   verifiedAt={s?.verified_at ?? null}
                 />
 
-                {!s?.verified_at && (
+                <div className="border-t border-border/60 pt-5">
+                  <BankAccountForm
+                    clubId={club.id}
+                    clubName={club.name}
+                    initial={bank ? { bin: bank.bank_bin, accountNumber: bank.account_number, accountName: bank.account_name } : null}
+                  />
+                </div>
+
+                <div className="border-t border-border/60 pt-5">
+                  <CancelPolicyForm clubId={club.id} hours={club.free_cancel_hours} />
+                </div>
+
+                {!s?.verified_at && !bank && (
                   <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
                     <Landmark className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
                     <span>
-                      Cụm sân này <strong>chưa nhận đặt sân online</strong> cho tới khi bạn kết nối PayOS ở trên.
+                      Cụm sân này <strong>chưa nhận đặt sân online</strong> cho tới khi bạn kết nối PayOS hoặc bật chuyển khoản thủ công.
                     </span>
                   </div>
                 )}

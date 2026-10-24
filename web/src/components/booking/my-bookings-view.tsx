@@ -2,10 +2,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CreateMatchModal } from '@/components/matches/create-match-modal'
+import { useConfirm } from '@/components/ui/confirm-dialog'
+import { cancelBooking } from '@/app/actions/cancellation'
+import { decideCancellation, describeOutcome, refundStatusLabel } from '@/lib/cancellation'
 import {
   Calendar,
   Clock,
@@ -14,6 +19,7 @@ import {
   Trophy,
   Flame,
   PlusCircle,
+  XCircle,
 } from 'lucide-react'
 
 import { formatVnd, formatTime, formatDate, formatShortDate } from '@/lib/format'
@@ -21,6 +27,8 @@ interface ClubRef {
   id?: string
   name: string
   address?: string | null
+  /** Số giờ trước giờ chơi được hủy và hoàn cọc (chính sách của cụm sân) */
+  free_cancel_hours?: number
 }
 
 interface CourtRef {
@@ -45,6 +53,8 @@ export interface MyBooking {
   total_price: number
   deposit_amount: number
   status: string
+  refund_status?: string
+  refund_amount?: number
   court: CourtRef | null
   /** Quan hệ 1-1 (matches.booking_id là UNIQUE) nên API trả một object, không phải mảng */
   matches: BookingMatchRef | null
@@ -81,6 +91,43 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
   const [activeTab, setActiveTab] = useState<'bookings' | 'matches'>('bookings')
   const [selectedBookingForMatch, setSelectedBookingForMatch] = useState<MyBooking | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  // Mốc "bây giờ" cố định cho lần render, để nút Hủy không nhấp nháy giữa các lần vẽ lại
+  const [now] = useState(() => Date.now())
+  const router = useRouter()
+  const confirm = useConfirm()
+
+  async function handleCancel(item: MyBooking) {
+    const club = item.court?.club
+    const decision = decideCancellation({
+      status: item.status,
+      start: new Date(item.start_time),
+      now: new Date(),
+      paidAmount: item.status === 'confirmed' ? Number(item.deposit_amount) : 0,
+      freeCancelHours: club?.free_cancel_hours ?? 24,
+      by: 'player',
+    })
+    const ok = await confirm({
+      title: 'Hủy đơn đặt sân này?',
+      description: describeOutcome(decision, formatVnd),
+      confirmText: 'Hủy đơn',
+      cancelText: 'Giữ lại',
+      destructive: true,
+    })
+    if (!ok) return
+
+    setCancellingId(item.id)
+    const result = await cancelBooking(item.id)
+    setCancellingId(null)
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+    toast.success(
+      result.refundAmount ? `Đã hủy đơn. Chủ sân sẽ hoàn ${formatVnd(result.refundAmount)} cho bạn.` : 'Đã hủy đơn đặt sân.'
+    )
+    router.refresh()
+  }
 
   function handleOpenCreateMatch(booking: MyBooking) {
     setSelectedBookingForMatch(booking)
@@ -142,6 +189,9 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                 const isPending = item.status === 'pending'
                 const isConfirmed = item.status === 'confirmed'
                 const match = item.matches
+                const isCancelled = item.status === 'cancelled'
+                const canCancel = (isPending || isConfirmed) && new Date(item.start_time).getTime() > now
+                const refundNote = refundStatusLabel(item.refund_status ?? 'none', Number(item.refund_amount ?? 0), formatVnd)
 
                 const startTime = formatTime(item.start_time)
                 const endTime = formatTime(item.end_time)
@@ -166,7 +216,7 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                                 : 'bg-muted text-muted-foreground text-xs'
                             }
                           >
-                            {isConfirmed ? 'Đã Cọc Khóa Sân' : isPending ? 'Chờ Cọc (15p)' : item.status}
+                            {isConfirmed ? 'Đã Cọc Khóa Sân' : isPending ? 'Chờ Cọc' : isCancelled ? 'Đã Hủy' : item.status}
                           </Badge>
 
                           {match && (
@@ -192,6 +242,18 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
                             <span>{club.address}</span>
+                          </div>
+                        )}
+
+                        {refundNote && (
+                          <div
+                            className={`text-xs font-semibold ${
+                              item.refund_status === 'refunded'
+                                ? 'text-emerald-700 dark:text-emerald-400'
+                                : 'text-amber-700 dark:text-amber-400'
+                            }`}
+                          >
+                            {refundNote}
                           </div>
                         )}
                       </div>
@@ -224,6 +286,19 @@ export function MyBookingsView({ bookings, participations }: MyBookingsViewProps
                           >
                             <PlusCircle className="w-3.5 h-3.5 mr-1" />
                             Mở Ghép Kèo
+                          </Button>
+                        )}
+
+                        {canCancel && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={cancellingId === item.id}
+                            onClick={() => handleCancel(item)}
+                            className="border-red-500/40 text-red-700 dark:text-red-400 hover:bg-red-500/10 cursor-pointer text-xs font-semibold"
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1" />
+                            {cancellingId === item.id ? 'Đang hủy...' : 'Hủy Đơn'}
                           </Button>
                         )}
 

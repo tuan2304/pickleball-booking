@@ -25,7 +25,8 @@ export default async function MyBookingsPage() {
         club:clubs (
           id,
           name,
-          address
+          address,
+          free_cancel_hours
         )
       ),
       matches (*)

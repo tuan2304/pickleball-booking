@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { updateBookingStatus } from '@/app/actions/owner'
+import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -55,6 +57,7 @@ const TIME_SLOTS = [
 
 export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
   const router = useRouter()
+  const askConfirm = useConfirm()
   const [viewMode, setViewMode] = useState<'timeline' | 'table'>('timeline')
   // Ngày theo giờ Việt Nam (toISOString() trả ngày UTC nên sai trước 7h sáng)
   const [selectedDate, setSelectedDate] = useState<string>(() => vnDateKey(Date.now()))
@@ -106,9 +109,30 @@ export function ScheduleView({ courts, initialBookings }: ScheduleViewProps) {
   })
 
   async function handleStatusChange(bookingId: string, status: 'confirmed' | 'cancelled' | 'completed') {
+    if (status === 'cancelled') {
+      const ok = await askConfirm({
+        title: 'Hủy đơn đặt sân này?',
+        description: 'Khách sẽ nhận thông báo. Nếu khách đã cọc, bạn phải hoàn đủ tiền cọc cho khách (xem mục Hoàn cọc).',
+        confirmText: 'Hủy đơn',
+        cancelText: 'Giữ lại',
+        destructive: true,
+      })
+      if (!ok) return
+    }
+
     setUpdatingId(bookingId)
-    await updateBookingStatus(bookingId, status)
+    const result = await updateBookingStatus(bookingId, status)
     setUpdatingId(null)
+
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+    if (status === 'cancelled' && result.refundAmount) {
+      toast.success(`Đã hủy đơn. Bạn cần hoàn ${formatVnd(result.refundAmount)} cho khách tại mục Hoàn cọc.`)
+    } else if (status === 'cancelled') {
+      toast.success('Đã hủy đơn đặt sân.')
+    }
   }
 
   return (

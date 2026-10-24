@@ -6,6 +6,7 @@ import { getPlatformCredentials, isPaymentSimulationEnabled, type PayosCredentia
 /**
  * Kênh nhận tiền cọc của một cụm sân:
  *  - club:       chủ sân tự kết nối PayOS → tiền về thẳng tài khoản của họ (cách duy nhất nhận đặt sân thật)
+ *  - manual:     chủ sân khai báo tài khoản ngân hàng, khách chuyển khoản theo VietQR rồi chủ sân tự xác nhận
  *  - platform:   chỉ còn cho các khoản cọc cũ đã thu trước khi bắt buộc kết nối riêng (webhook vẫn phải kiểm tra được)
  *  - simulation: môi trường dev chưa có khóa nào → QR mẫu và nút giả lập
  *
@@ -13,10 +14,26 @@ import { getPlatformCredentials, isPaymentSimulationEnabled, type PayosCredentia
  */
 export type PaymentChannel =
   | { kind: 'club'; clubId: string; creds: PayosCredentials }
+  | { kind: 'manual'; clubId: string; bank: ManualBankAccount }
   | { kind: 'platform'; creds: PayosCredentials }
   | { kind: 'simulation' }
 
+export interface ManualBankAccount {
+  bin: string
+  accountNumber: string
+  accountName: string
+}
+
 type Admin = SupabaseClient<Database>
+
+async function loadBankAccount(admin: Admin, clubId: string): Promise<ManualBankAccount | null> {
+  const { data } = await admin
+    .from('club_bank_accounts')
+    .select('bank_bin, account_number, account_name')
+    .eq('club_id', clubId)
+    .maybeSingle()
+  return data ? { bin: data.bank_bin, accountNumber: data.account_number, accountName: data.account_name } : null
+}
 
 async function loadClubCredentials(admin: Admin, clubId: string): Promise<{ creds: PayosCredentials; verified: boolean } | null> {
   const { data } = await admin
@@ -37,12 +54,16 @@ async function loadClubCredentials(admin: Admin, clubId: string): Promise<{ cred
 }
 
 /**
- * Chọn kênh để tạo đơn thanh toán mới. Trả null nếu cụm sân chưa kết nối PayOS riêng (và không phải môi trường dev giả lập):
+ * Chọn kênh để tạo đơn thanh toán mới, theo thứ tự ưu tiên: PayOS riêng đã xác thực (tự động xác nhận) →
+ * chuyển khoản thủ công (chủ sân tự xác nhận) → giả lập (chỉ dev). Trả null nếu cụm sân chưa có kênh nào:
  * khi đó cụm sân chưa nhận đặt sân online, tiền của khách không bao giờ đi qua tài khoản của nền tảng.
  */
 export async function resolveClubChannel(admin: Admin, clubId: string): Promise<PaymentChannel | null> {
   const own = await loadClubCredentials(admin, clubId)
   if (own?.verified) return { kind: 'club', clubId, creds: own.creds }
+
+  const bank = await loadBankAccount(admin, clubId)
+  if (bank) return { kind: 'manual', clubId, bank }
 
   if (isPaymentSimulationEnabled()) return { kind: 'simulation' }
   return null
@@ -61,11 +82,12 @@ export async function credentialsForStoredChannel(
   if (channel === 'club' && clubId) {
     return (await loadClubCredentials(admin, clubId))?.creds ?? null
   }
-  if (channel === 'simulation') return null
+  // Chuyển khoản thủ công không có webhook nên không có khóa nào để kiểm tra chữ ký
+  if (channel === 'simulation' || channel === 'manual') return null
   return getPlatformCredentials()
 }
 
 /** Cụm sân có nhận đặt sân online được không (để ẩn/hiện form đặt ở giao diện). */
-export function canAcceptBookings(acceptsOnlinePayment: boolean): boolean {
-  return acceptsOnlinePayment || isPaymentSimulationEnabled()
+export function canAcceptBookings(acceptsOnlinePayment: boolean, acceptsManualTransfer = false): boolean {
+  return acceptsOnlinePayment || acceptsManualTransfer || isPaymentSimulationEnabled()
 }

@@ -27,14 +27,14 @@ isOneToOne: false
                   ]
                 },"bookings": {
                   Row: {
-                    "court_id": string,"created_at": string,"deposit_amount": number,"during": unknown,"end_time": string,"expires_at": string,"id": string,"is_open_match": boolean,"note": string | null,"start_time": string,"status": string,"total_price": number,"updated_at": string,"user_id": string
+                    "cancelled_at": string | null,"cancelled_by": string | null,"court_id": string,"created_at": string,"deposit_amount": number,"during": unknown,"end_time": string,"expires_at": string,"id": string,"is_open_match": boolean,"note": string | null,"refund_amount": number,"refund_status": string,"refunded_at": string | null,"start_time": string,"status": string,"total_price": number,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "court_id": string,"created_at"?: string,"deposit_amount": number,"during"?: never,"end_time": string,"expires_at"?: string,"id"?: string,"is_open_match"?: boolean,"note"?: string | null,"start_time": string,"status"?: string,"total_price": number,"updated_at"?: string,"user_id": string
+                    "cancelled_at"?: string | null,"cancelled_by"?: string | null,"court_id": string,"created_at"?: string,"deposit_amount": number,"during"?: never,"end_time": string,"expires_at"?: string,"id"?: string,"is_open_match"?: boolean,"note"?: string | null,"refund_amount"?: number,"refund_status"?: string,"refunded_at"?: string | null,"start_time": string,"status"?: string,"total_price": number,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "court_id"?: string,"created_at"?: string,"deposit_amount"?: number,"during"?: never,"end_time"?: string,"expires_at"?: string,"id"?: string,"is_open_match"?: boolean,"note"?: string | null,"start_time"?: string,"status"?: string,"total_price"?: number,"updated_at"?: string,"user_id"?: string
+                    "cancelled_at"?: string | null,"cancelled_by"?: string | null,"court_id"?: string,"created_at"?: string,"deposit_amount"?: number,"during"?: never,"end_time"?: string,"expires_at"?: string,"id"?: string,"is_open_match"?: boolean,"note"?: string | null,"refund_amount"?: number,"refund_status"?: string,"refunded_at"?: string | null,"start_time"?: string,"status"?: string,"total_price"?: number,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -48,6 +48,26 @@ isOneToOne: false
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"club_bank_accounts": {
+                  Row: {
+                    "account_name": string,"account_number": string,"bank_bin": string,"club_id": string,"created_at": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_name": string,"account_number": string,"bank_bin": string,"club_id": string,"created_at"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "account_name"?: string,"account_number"?: string,"bank_bin"?: string,"club_id"?: string,"created_at"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "club_bank_accounts_club_id_fkey"
+      columns: ["club_id"]
+isOneToOne: true
+      referencedRelation: "clubs"
       referencedColumns: ["id"]
     }
                   ]
@@ -99,14 +119,14 @@ isOneToOne: false
                   ]
                 },"clubs": {
                   Row: {
-                    "accepts_online_payment": boolean,"address": string,"amenities": (string)[] | null,"city": string | null,"close_time": string,"created_at": string,"description": string | null,"district": string | null,"id": string,"images": (string)[] | null,"is_active": boolean,"latitude": number | null,"longitude": number | null,"name": string,"open_time": string,"owner_id": string,"plan": string,"plan_until": string | null,"updated_at": string,"ward": string | null
+                    "accepts_manual_transfer": boolean,"accepts_online_payment": boolean,"address": string,"amenities": (string)[] | null,"city": string | null,"close_time": string,"created_at": string,"description": string | null,"district": string | null,"free_cancel_hours": number,"id": string,"images": (string)[] | null,"is_active": boolean,"latitude": number | null,"longitude": number | null,"name": string,"open_time": string,"owner_id": string,"plan": string,"plan_until": string | null,"updated_at": string,"ward": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "accepts_online_payment"?: boolean,"address": string,"amenities"?: (string)[] | null,"city"?: string | null,"close_time"?: string,"created_at"?: string,"description"?: string | null,"district"?: string | null,"id"?: string,"images"?: (string)[] | null,"is_active"?: boolean,"latitude"?: number | null,"longitude"?: number | null,"name": string,"open_time"?: string,"owner_id": string,"plan"?: string,"plan_until"?: string | null,"updated_at"?: string,"ward"?: string | null
+                    "accepts_manual_transfer"?: boolean,"accepts_online_payment"?: boolean,"address": string,"amenities"?: (string)[] | null,"city"?: string | null,"close_time"?: string,"created_at"?: string,"description"?: string | null,"district"?: string | null,"free_cancel_hours"?: number,"id"?: string,"images"?: (string)[] | null,"is_active"?: boolean,"latitude"?: number | null,"longitude"?: number | null,"name": string,"open_time"?: string,"owner_id": string,"plan"?: string,"plan_until"?: string | null,"updated_at"?: string,"ward"?: string | null
                   }
                   Update: {
-                    "accepts_online_payment"?: boolean,"address"?: string,"amenities"?: (string)[] | null,"city"?: string | null,"close_time"?: string,"created_at"?: string,"description"?: string | null,"district"?: string | null,"id"?: string,"images"?: (string)[] | null,"is_active"?: boolean,"latitude"?: number | null,"longitude"?: number | null,"name"?: string,"open_time"?: string,"owner_id"?: string,"plan"?: string,"plan_until"?: string | null,"updated_at"?: string,"ward"?: string | null
+                    "accepts_manual_transfer"?: boolean,"accepts_online_payment"?: boolean,"address"?: string,"amenities"?: (string)[] | null,"city"?: string | null,"close_time"?: string,"created_at"?: string,"description"?: string | null,"district"?: string | null,"free_cancel_hours"?: number,"id"?: string,"images"?: (string)[] | null,"is_active"?: boolean,"latitude"?: number | null,"longitude"?: number | null,"name"?: string,"open_time"?: string,"owner_id"?: string,"plan"?: string,"plan_until"?: string | null,"updated_at"?: string,"ward"?: string | null
                   }
                   Relationships: [
                     {

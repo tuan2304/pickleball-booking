@@ -9,6 +9,9 @@ import { getClubDeletionBlocker, getCourtDeletionBlocker } from '@/lib/deletion-
 import { requireClubOwner } from '@/lib/auth-guards'
 import { isValidLatLng } from '@/lib/maps'
 import { validatePricingRule } from '@/lib/pricing-rule'
+import { cancelBookingAsOwner } from '@/lib/booking-cancel'
+import { isManualPayment, latestPayment } from '@/lib/manual-payment'
+import { settlePayment } from '@/lib/payments'
 
 export async function createClub(formData: FormData) {
   const supabase = await createClient()
@@ -182,6 +185,30 @@ export async function updateBookingStatus(bookingId: string, status: 'confirmed'
     return { error: 'Chưa đến giờ chơi nên chưa thể đánh dấu hoàn thành' }
   }
 
+  // Hủy: đi qua quy tắc hoàn cọc (chủ sân hủy thì luôn hoàn đủ) và tự báo cho người đặt
+  if (status === 'cancelled') {
+    const outcome = await cancelBookingAsOwner(bookingId)
+    if (!outcome.ok) return { error: outcome.error }
+    revalidatePath('/owner/schedule')
+    revalidatePath('/owner/dashboard')
+    revalidatePath('/owner/refunds')
+    revalidatePath('/my-bookings')
+    return { success: true, refundAmount: outcome.decision.refundAmount }
+  }
+
+  // Xác nhận đơn thanh toán bằng chuyển khoản thủ công: ghi nhận khoản cọc như một khoản đã thanh toán thật
+  if (status === 'confirmed' && booking.status === 'pending') {
+    const payment = await latestPayment(bookingId)
+    if (payment && isManualPayment(payment) && payment.status !== 'paid') {
+      const settled = await settlePayment({ orderCode: payment.order_code, reference: `MANUAL_${Date.now()}` })
+      if (!settled.ok) return { error: settled.error }
+      revalidatePath('/owner/schedule')
+      revalidatePath('/owner/dashboard')
+      revalidatePath('/my-bookings')
+      return { success: true }
+    }
+  }
+
   const admin = createAdminClient()
   const { error } = await admin.from('bookings').update({ status }).eq('id', bookingId)
   if (error) {
@@ -189,12 +216,7 @@ export async function updateBookingStatus(bookingId: string, status: 'confirmed'
     return { error: 'Không thể cập nhật đơn đặt sân' }
   }
 
-  if (status === 'cancelled') {
-    await admin.from('payments').update({ status: 'cancelled' }).eq('booking_id', bookingId).eq('status', 'pending')
-    await admin.from('matches').update({ status: 'cancelled' }).eq('booking_id', bookingId).in('status', ['open', 'full'])
-  }
-
-  const labels = { confirmed: 'đã được xác nhận', cancelled: 'đã bị chủ sân hủy', completed: 'đã hoàn thành' }
+  const labels = { confirmed: 'đã được xác nhận', completed: 'đã hoàn thành' }
   await notifyUser({
     userId: booking.user_id,
     title: `Đơn đặt sân ${labels[status]}`,
