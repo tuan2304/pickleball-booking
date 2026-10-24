@@ -1,3 +1,6 @@
 
 # cache của Supabase CLI
 /supabase/.temp
+
+# Bản sao lưu dữ liệu tạm trước khi xóa bảng, không đưa lên git
+supabase/backups/

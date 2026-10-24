@@ -7,7 +7,7 @@ const BLOCKED_MESSAGE =
   'Không thể xóa vì đã có đơn đặt hoặc giao dịch liên quan (xóa sẽ làm mất lịch sử thanh toán). Hãy tạm ngưng hoạt động thay vì xóa.'
 
 /**
- * Xóa sân con/cụm sân kéo theo xóa dây chuyền đơn đặt, thanh toán, khoản chi và lịch sử thuê bao (ON DELETE CASCADE),
+ * Xóa sân con/cụm sân kéo theo xóa dây chuyền đơn đặt, thanh toán và lịch sử thuê bao (ON DELETE CASCADE),
  * tức là làm mất sổ sách tiền cọc. Chỉ cho xóa khi chưa có dữ liệu thật nào dính tới. Trả về thông báo lý do nếu bị chặn.
  *
  * Dùng client có quyền đọc đủ (service_role) vì đây là phép kiểm tra, không phải thao tác của người dùng.
@@ -31,9 +31,6 @@ async function hasFinancialTrail(admin: Client, courtIds: string[], clubId?: str
   }
 
   if (clubId) {
-    const { data: payouts } = await admin.from('payouts').select('id').eq('club_id', clubId)
-    if ((payouts ?? []).length > 0) return true
-
     const { data: subs } = await admin.from('subscription_payments').select('id').eq('club_id', clubId).eq('status', 'paid')
     if ((subs ?? []).length > 0) return true
   }

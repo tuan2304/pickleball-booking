@@ -151,13 +151,9 @@ INSERT INTO payments(booking_id,user_id,order_code,amount,status,metadata) VALUE
  ('b1000000-0000-0000-0000-000000000004','c0000000-0000-0000-0000-00000000000c',1004,20000,'paid','{"channel":"platform","needs_refund":true}'),
  ('b1000000-0000-0000-0000-000000000005','c0000000-0000-0000-0000-00000000000c',1005,10000,'pending','{"channel":"platform"}'),
  ('b1000000-0000-0000-0000-000000000006','c0000000-0000-0000-0000-00000000000c',1006,5000,'paid','{}');
-INSERT INTO payouts(club_id, amount, note) VALUES ('11111111-1111-1111-1111-111111111111', 40000, 'dot 1');
+SELECT t(NULL,'postgres',$$SELECT (to_regclass('public.payouts') IS NULL)::text$$,'true','bảng payouts đã được gỡ');
 SELECT t(NULL,'service_role',$$SELECT * FROM club_balances()$$,'ERR','hàm đối soát club_balances đã được gỡ');
 SELECT t(NULL,'service_role',$$SELECT (public.platform_stats(now() - interval '30 days', now() + interval '1 day') ? 'owed_total')::text$$,'false','platform_stats không còn trả owed_total');
-SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$SELECT count(*)::text FROM payouts$$,'1','chủ sân xem được khoản chi cho cụm sân của mình');
-SELECT t('f0000000-0000-0000-0000-00000000000f','authenticated',$$SELECT count(*)::text FROM payouts$$,'0','chủ sân khác không thấy khoản chi của cụm sân này');
-SELECT t('a0000000-0000-0000-0000-00000000000a','authenticated',$$INSERT INTO payouts(club_id,amount) VALUES ('11111111-1111-1111-1111-111111111111',1) RETURNING 'x'$$,'ERR','chủ sân không tự ghi khoản chi');
-SELECT t(NULL,'postgres',$$INSERT INTO payouts(club_id,amount) VALUES ('11111111-1111-1111-1111-111111111111',0) RETURNING 'x'$$,'ERR','khoản chi phải lớn hơn 0');
 
 -- ---------------------------------------------------------------- 10. Trang quản trị: ticket, thông báo, thống kê
 INSERT INTO auth.users(id, raw_user_meta_data) VALUES ('99999999-9999-9999-9999-999999999999', '{"full_name":"Quan tri"}');

@@ -184,7 +184,7 @@ where id = (select id from auth.users where email = 'EMAIL_CUA_BAN');
 ### Chủ sân nhận tiền cọc (bắt buộc kết nối PayOS riêng)
 - Từ 23/10/2026 cụm sân **chỉ nhận đặt sân online khi chủ sân đã kết nối PayOS riêng** ở mục **Nhận thanh toán**; tiền cọc về thẳng tài khoản của họ. Nền tảng không còn thu hộ cọc, nên không phải đối soát hay chuyển tiền lại.
 - Cụm sân chưa kết nối hiện thông báo "chưa nhận đặt sân online" với khách và có huy hiệu tương ứng ở `/admin/finance` (trang Gói dịch vụ).
-- Quản trị không còn phải đối soát hay chuyển tiền cọc: màn ghi nhận chi trả đã bỏ. Bảng `payouts` vẫn nằm trong database để giữ sổ cũ; hàm `club_balances` đã được gỡ.
+- Quản trị không còn phải đối soát hay chuyển tiền cọc: màn ghi nhận chi trả đã bỏ. Bảng `payouts` và hàm `club_balances` đã được gỡ khỏi database (dòng sổ cũ được sao lưu ngày 24/10/2026).
 
 ### Thuê bao
 - Chưa đặt `BILLING_ENFORCED_FROM` thì **không có giới hạn nào**; chủ sân vẫn thấy trang **Gói dịch vụ** và có thể mua Pro thử.

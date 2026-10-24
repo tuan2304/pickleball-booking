@@ -281,32 +281,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"payouts": {
-                  Row: {
-                    "amount": number,"club_id": string,"created_at": string,"created_by": string | null,"id": string,"note": string | null
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "amount": number,"club_id": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null
-                  }
-                  Update: {
-                    "amount"?: number,"club_id"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "payouts_club_id_fkey"
-      columns: ["club_id"]
-isOneToOne: false
-      referencedRelation: "clubs"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "payouts_created_by_fkey"
-      columns: ["created_by"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    }
-                  ]
                 },"profiles": {
                   Row: {
                     "avatar_url": string | null,"created_at": string,"full_name": string,"id": string,"phone_number": string | null,"rating": number | null,"role": string,"skill_level": string | null,"updated_at": string

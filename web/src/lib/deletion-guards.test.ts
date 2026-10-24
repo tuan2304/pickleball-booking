@@ -5,7 +5,7 @@ import { getClubDeletionBlocker, getCourtDeletionBlocker } from './deletion-guar
 type Tables = Record<string, Record<string, unknown>[]>
 
 const client = (tables: Tables) =>
-  createFakeClient(createFakeDb({ courts: [], bookings: [], payments: [], payouts: [], subscription_payments: [], ...tables })) as never
+  createFakeClient(createFakeDb({ courts: [], bookings: [], payments: [], subscription_payments: [], ...tables })) as never
 
 describe('getCourtDeletionBlocker', () => {
   it('sân chưa từng có đơn thì xóa được', async () => {
@@ -45,11 +45,6 @@ describe('getClubDeletionBlocker', () => {
 
   it('có đơn ở bất kỳ sân con nào thì chặn', async () => {
     const db = client({ courts, bookings: [{ id: 'b', court_id: 'c2', status: 'confirmed' }] })
-    expect(await getClubDeletionBlocker(db, 'club-1')).not.toBeNull()
-  })
-
-  it('có khoản chi cho chủ sân thì chặn (sổ đối soát)', async () => {
-    const db = client({ courts, payouts: [{ id: 'po', club_id: 'club-1' }] })
     expect(await getClubDeletionBlocker(db, 'club-1')).not.toBeNull()
   })
 
