@@ -6,6 +6,7 @@ import { CourtFormModal } from '@/components/owner/court-form-modal'
 import { CourtItemActions } from '@/components/owner/court-item-actions'
 import { ClubItemActions } from '@/components/owner/club-item-actions'
 import { ClubLocationButton } from '@/components/owner/club-location-button'
+import { ClubImagesButton } from '@/components/owner/club-images-button'
 import { fullAddress, hasCoordinates } from '@/lib/maps'
 import { Building2, MapPin, Clock, CircleDot, ShieldCheck } from 'lucide-react'
 
@@ -90,6 +91,7 @@ export default async function OwnerClubsPage() {
                         address={fullAddress(club)}
                         initial={hasCoordinates({ lat: club.latitude, lng: club.longitude }) ? { lat: Number(club.latitude), lng: Number(club.longitude) } : null}
                       />
+                      <ClubImagesButton clubId={club.id} clubName={club.name} initial={club.images ?? []} />
                       <CourtFormModal clubId={club.id} clubName={club.name} />
                       <ClubItemActions clubId={club.id} clubName={club.name} />
                     </div>

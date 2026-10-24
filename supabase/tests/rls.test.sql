@@ -292,6 +292,19 @@ SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$INSERT INTO st
 SELECT t('b0000000-0000-0000-0000-00000000000b','authenticated',$$WITH x AS (DELETE FROM storage.objects WHERE bucket_id='avatars' RETURNING 1) SELECT count(*)::text FROM x$$,'0','người khác không xóa được ảnh đại diện của mình');
 SELECT t(NULL,'anon',$$INSERT INTO storage.objects(bucket_id,name) VALUES ('avatars','c0000000-0000-0000-0000-00000000000c/x.png') RETURNING 'x'$$,'ERR','khách không tải ảnh đại diện');
 
+-- ---------------------------------------------------------------- 16. Công cụ hồ sơ người chơi
+UPDATE profiles SET phone_number = '0912345678' WHERE id = 'c0000000-0000-0000-0000-00000000000c';
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT phone_number FROM get_my_profile()$$,'0912345678','người dùng đọc lại được số điện thoại của chính mình');
+SELECT t('c0000000-0000-0000-0000-00000000000c','authenticated',$$SELECT count(*)::text FROM get_my_profile()$$,'1','get_my_profile chỉ trả đúng một dòng của mình');
+SELECT t('d0000000-0000-0000-0000-00000000000d','authenticated',$$SELECT count(*)::text FROM get_my_profile() WHERE id = 'c0000000-0000-0000-0000-00000000000c'$$,'0','không đọc được hồ sơ của người khác qua get_my_profile');
+SELECT t('d0000000-0000-0000-0000-00000000000d','authenticated',$$SELECT coalesce(phone_number,'(trống)') FROM get_my_profile()$$,'(trống)','số điện thoại người khác không lọt vào kết quả của mình');
+SELECT t(NULL,'anon',$$SELECT count(*)::text FROM get_my_profile()$$,'ERR','khách không gọi được get_my_profile');
+SELECT t(NULL,'anon',$$SELECT matches_created::text FROM player_public_stats('b0000000-0000-0000-0000-00000000000b')$$,'1','khách xem được số kèo đã tạo của một người chơi');
+SELECT t(NULL,'anon',$$SELECT matches_joined::text FROM player_public_stats('c0000000-0000-0000-0000-00000000000c')$$,'1','số kèo đã tham gia chỉ tính thành viên đã được duyệt');
+SELECT t(NULL,'anon',$$SELECT bookings_played::text FROM player_public_stats('b0000000-0000-0000-0000-00000000000b')$$,'1','số lần đã chơi tính đơn đã hoàn thành hoặc đã qua giờ');
+SELECT t(NULL,'anon',$$SELECT (matches_created + matches_joined + bookings_played)::text FROM player_public_stats('99999999-9999-9999-9999-999999999998')$$,'0','người không tồn tại trả về toàn số 0');
+SELECT t(NULL,'anon',$$SELECT count(*)::text FROM player_public_stats('a0000000-0000-0000-0000-00000000000a')$$,'1','hàm thống kê chỉ trả một dòng con số, không lộ dữ liệu đơn');
+
 -- ---------------------------------------------------------------- Tổng kết
 SELECT CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END AS ket_qua, label AS ca_kiem_thu, CASE WHEN ok THEN '' ELSE detail END AS chi_tiet FROM test_results ORDER BY ok, label;
 DO $$

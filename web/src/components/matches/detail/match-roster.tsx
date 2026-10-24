@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -52,7 +53,13 @@ export function MatchRoster({ match, participants, isHost, isFull, loading, onRe
             </div>
             <div>
               <div className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                <span>{match.creator?.full_name || 'Chủ kèo'}</span>
+                {match.creator ? (
+                  <Link href={`/players/${match.creator.id}`} className="hover:underline underline-offset-2">
+                    {match.creator.full_name || 'Chủ kèo'}
+                  </Link>
+                ) : (
+                  <span>Chủ kèo</span>
+                )}
                 <Badge className="bg-amber-400 text-slate-900 text-xs py-0 px-1.5">
                   Chủ Kèo
                 </Badge>
@@ -86,7 +93,13 @@ export function MatchRoster({ match, participants, isHost, isFull, loading, onRe
                   </div>
                   <div>
                     <div className="font-semibold text-xs text-foreground">
-                      {p.user?.full_name || 'Người tham gia'}
+                      {p.user ? (
+                        <Link href={`/players/${p.user.id}`} className="hover:underline underline-offset-2">
+                          {p.user.full_name || 'Người tham gia'}
+                        </Link>
+                      ) : (
+                        'Người tham gia'
+                      )}
                     </div>
                     {p.message && (
                       <div className="text-xs text-muted-foreground italic flex items-center gap-1">
@@ -134,7 +147,13 @@ export function MatchRoster({ match, participants, isHost, isFull, loading, onRe
                       </div>
                       <div>
                         <div className="font-bold text-xs text-foreground">
-                          {p.user?.full_name || 'Ứng viên'}
+                          {p.user ? (
+                            <Link href={`/players/${p.user.id}`} className="hover:underline underline-offset-2">
+                              {p.user.full_name || 'Ứng viên'}
+                            </Link>
+                          ) : (
+                            'Ứng viên'
+                          )}
                         </div>
                         {p.message && (
                           <div className="text-xs text-muted-foreground">

@@ -3,6 +3,7 @@ import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { Suspense } from 'react'
 import { getCurrentUser, getCurrentProfile } from '@/lib/supabase/session'
 import { logout } from '@/app/actions/auth'
+import { Avatar } from '@/components/profile/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Compass, Calendar, Building2, LogOut, Flame, LifeBuoy, ShieldCheck } from 'lucide-react'
@@ -109,10 +110,12 @@ async function HeaderContent() {
               )}
               <NotificationBell userId={user.id} />
 
-              <div className="flex items-center gap-2 pl-1">
-                <div className="w-8 h-8 rounded-full bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-center text-xs border border-emerald-500/30">
-                  {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
-                </div>
+              <Link
+                href="/profile"
+                aria-label="Hồ sơ của tôi"
+                className="flex items-center gap-2 pl-1 pr-1.5 py-0.5 rounded-full hover:bg-muted/60 transition-colors"
+              >
+                <Avatar name={profile?.full_name} src={profile?.avatar_url} size={32} />
                 <div className="hidden sm:block text-left text-xs">
                   <div className="font-bold text-foreground truncate max-w-[120px]">
                     {profile?.full_name || 'Người chơi'}
@@ -121,7 +124,7 @@ async function HeaderContent() {
                     {isAdmin ? 'Quản trị' : isOwner ? 'Chủ sân' : 'Người chơi'}
                   </Badge>
                 </div>
-              </div>
+              </Link>
 
               <form action={logout}>
                 <Button

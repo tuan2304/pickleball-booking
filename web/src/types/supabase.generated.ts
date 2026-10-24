@@ -427,6 +427,16 @@ isOneToOne: false
               "allowed": boolean,"hit_count": number,"retry_after": number
             }[]
                            },
+"get_my_profile":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "avatar_url": string | null,"full_name": string,"id": string,"phone_number": string | null,"rating": number | null,"role": string,"skill_level": string | null
+            }[]
+                           },
+"player_public_stats":
+{ Args: { "p_user": string }; Returns: {
+              "bookings_played": number,"matches_created": number,"matches_joined": number
+            }[]
+                           },
 "get_booking_contacts":
 { Args: { "p_booking_ids": (string)[] }; Returns: {
               "booking_id": string,"full_name": string,"phone_number": string | null
