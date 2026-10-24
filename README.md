@@ -76,7 +76,7 @@ supabase/   Migration (schema, RLS, hàm SQL) và bộ test bảo mật
 docs/       Ảnh minh họa
 ```
 
-Tài liệu đi kèm: [Luồng hoạt động](FLOW.md) (có sơ đồ), [Quy chuẩn thiết kế](DESIGN.md), [Hướng dẫn triển khai](DEPLOYMENT.md).
+Tài liệu đi kèm: [Luồng hoạt động](#luồng-hoạt-động) (có sơ đồ), [Quy chuẩn thiết kế](DESIGN.md), [Hướng dẫn triển khai](DEPLOYMENT.md).
 
 ## Chạy thử
 
@@ -106,6 +106,256 @@ Các lệnh khác, chạy trong `web/`:
 | `npm run build` | Build production |
 
 Ứng dụng mobile: `cd mobile && npm install && npm start`.
+
+## Luồng hoạt động
+
+Phần này giải thích người dùng đi qua những bước nào và hệ thống xử lý gì phía sau. Các sơ đồ Mermaid tự hiển thị trên GitHub. Trong VS Code, mở file rồi nhấn `Ctrl+Shift+V` (cần extension *Markdown Preview Mermaid Support*).
+
+### Kiến trúc
+
+```mermaid
+flowchart LR
+    subgraph Client["Người dùng"]
+        W["Web<br/>Next.js 16 + Tailwind"]
+        M["Mobile<br/>Expo / React Native"]
+    end
+
+    subgraph Server["Next.js (Vercel)"]
+        SA["Server Actions<br/>booking · matches · chat · reviews"]
+        WH["/api/payos/webhook"]
+    end
+
+    subgraph Supa["Supabase"]
+        AUTH["Auth"]
+        DB[("PostgreSQL<br/>+ RLS")]
+        RT["Realtime"]
+    end
+
+    PAYOS["PayOS<br/>(VietQR, kênh của từng chủ sân)"]
+
+    W -->|gọi| SA
+    W <-.->|"lắng nghe thay đổi"| RT
+    M --> DB
+    M <-.-> RT
+    SA --> DB
+    SA --> PAYOS
+    PAYOS -->|"báo đã chuyển khoản"| WH
+    WH --> DB
+    DB --> RT
+    W --> AUTH
+```
+
+Web không phải hỏi lại server liên tục. Khi database đổi (có cọc, có người xin vào kèo, có tin nhắn mới), Supabase Realtime đẩy thay đổi xuống trình duyệt và giao diện tự cập nhật.
+
+### Đặt sân, cọc, xác nhận
+
+Đây là luồng quan trọng nhất của sản phẩm.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor P as Người chơi
+    participant UI as Trang chi tiết sân
+    participant SA as Server Action<br/>createBooking
+    participant DB as PostgreSQL
+    participant PO as PayOS
+    participant WH as Webhook
+    participant RT as Realtime
+    actor O as Chủ sân
+
+    P->>UI: Chọn sân con, ngày, các ô giờ trống
+    UI-->>P: Hiện tổng tiền + tiền cọc (tính trực tiếp)
+    P->>UI: Bấm "Giữ chỗ"
+    UI->>SA: createBooking(court, start, end)
+
+    SA->>DB: Lấy giá cơ bản + bảng giá theo khung giờ
+    SA->>SA: Tính tổng tiền, tiền cọc (% do chủ sân đặt)
+    SA->>DB: INSERT booking (status = pending, hết hạn sau 15')
+
+    alt Trùng giờ với người khác
+        DB-->>SA: Lỗi 23P01 (Exclusion Constraint)
+        SA-->>UI: "Khung giờ vừa có người đặt"
+    else Giờ còn trống
+        DB-->>SA: Tạo thành công
+        SA->>PO: Tạo link thanh toán + mã QR (kênh PayOS của chủ sân)
+        PO-->>SA: qrCode, checkoutUrl
+        SA->>DB: INSERT payment (pending)
+        SA-->>UI: Chuyển sang /bookings/[id]
+    end
+
+    UI-->>P: Hiện QR + đồng hồ đếm ngược 15:00
+    P->>PO: Quét QR, chuyển khoản
+    PO->>WH: POST webhook (đã nhận tiền)
+    WH->>WH: Kiểm tra chữ ký + đối chiếu số tiền
+    WH->>DB: payment → paid · booking → confirmed
+    WH->>DB: INSERT notifications (cho người chơi & chủ sân)
+    DB->>RT: Phát sự kiện thay đổi
+    RT-->>UI: Trang tự chuyển "Đặt sân thành công"
+    RT-->>O: Chuông báo "Có đơn đặt sân mới"
+```
+
+**Vòng đời của một đơn đặt sân**
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: Người chơi giữ chỗ
+    pending --> confirmed: Nhận đủ tiền cọc
+    pending --> cancelled: Hết 15 phút chưa cọc
+    confirmed --> completed: Chủ sân đánh dấu đã chơi xong
+    confirmed --> cancelled: Chủ sân / người chơi hủy
+    completed --> [*]
+    cancelled --> [*]
+
+    note right of pending
+        Giờ này đã bị KHÓA,
+        người khác không đặt được
+    end note
+    note right of cancelled
+        Giờ được nhả ra,
+        ai cũng đặt lại được
+    end note
+```
+
+**Vì sao không bao giờ trùng lịch?** Không kiểm tra bằng code, vì hai người bấm cùng lúc sẽ lọt qua. Database có ràng buộc:
+
+```sql
+EXCLUDE USING gist (court_id WITH =, during WITH &&)
+WHERE (status IN ('pending', 'confirmed'))
+```
+
+Cùng một sân, khoảng giờ giao nhau và đơn còn hiệu lực thì Postgres từ chối. Ai bấm trước được giữ chỗ, người sau nhận thông báo lỗi thân thiện.
+
+**Cách tính giá**
+
+```mermaid
+flowchart TD
+    A["Giờ bắt đầu + thứ trong tuần"] --> B{"Có bảng giá<br/>khớp khung giờ & thứ?"}
+    B -- Có --> C["Dùng giá của khung đó<br/>(giờ vàng, cuối tuần...)"]
+    B -- Không --> D["Dùng giá cơ bản của sân"]
+    C --> E["Tổng tiền = số giờ × đơn giá"]
+    D --> E
+    E --> F["Tiền cọc = Tổng × % cọc của sân"]
+    F --> G["Còn lại: trả trực tiếp tại sân"]
+```
+
+### Ghép kèo
+
+Người chơi đã có sân nhưng thiếu người thì mở một kèo để mọi người cùng tham gia.
+
+```mermaid
+flowchart TD
+    S1["Đặt sân mới<br/>(bật công tắc 'Mở ghép kèo')"] --> M
+    S2["Đơn có sẵn trong<br/>'Lịch đặt của tôi' → Mở kèo"] --> M
+    M["Tạo kèo: tên, trình độ, số người cần,<br/>cách chia tiền"] --> C{"Chia tiền thế nào?"}
+    C -- "Chia đều" --> C1["Chi phí/người = Tổng tiền sân ÷ số người"]
+    C -- "Chủ bao trọn" --> C2["Chi phí/người = 0 đ"]
+    C1 --> L
+    C2 --> L
+    L["Kèo hiện ở trang /matches<br/>(trạng thái: open)"]
+
+    L --> J["Người khác bấm 'Xin tham gia'"]
+    J --> N1["Chủ kèo nhận thông báo"]
+    N1 --> D{"Chủ kèo duyệt?"}
+    D -- Duyệt --> A["accepted<br/>số người +1"]
+    D -- Từ chối --> R["rejected<br/>báo người xin"]
+    A --> F{"Đủ người chưa?"}
+    F -- Đủ --> FULL["Kèo chuyển 'full'"]
+    F -- Chưa --> L
+    A --> CH["Vào phòng chat của kèo"]
+```
+
+**Trạng thái người tham gia**
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: Gửi yêu cầu
+    pending --> accepted: Chủ kèo duyệt
+    pending --> rejected: Chủ kèo từ chối
+    accepted --> left: Tự rời kèo
+    left --> pending: Xin tham gia lại
+    rejected --> [*]
+```
+
+### Realtime: màn hình nào nghe bảng nào
+
+| Màn hình | Bảng được lắng nghe | Kết quả người dùng thấy |
+| :-- | :-- | :-- |
+| `/bookings/[id]` | `bookings` | Đang chờ cọc tự chuyển sang "Thành công" |
+| `/owner/schedule` | `bookings` | Lịch của chủ sân thêm đơn mới ngay lập tức |
+| `/matches/[id]` | `match_participants`, `matches` | Danh sách thành viên và số chỗ trống tự đổi |
+| Hộp chat trong kèo | `match_messages` | Tin nhắn mới hiện ngay, không cần F5 |
+| Phần đánh giá sân | `club_reviews` | Đánh giá mới hiện ngay |
+| Chuông thông báo | `notifications` | Số đỏ tăng và có popup |
+
+### Bản đồ trang
+
+```mermaid
+flowchart LR
+    HOME["/ Trang chủ"] --> CLUBS["/clubs<br/>Khám phá sân"]
+    HOME --> MATCHES["/matches<br/>Kèo giao lưu"]
+    HOME --> LOGIN["/login · /register"]
+
+    CLUBS --> CD["/clubs/[id]<br/>Chi tiết + chọn giờ + đánh giá"]
+    CD --> BK["/bookings/[id]<br/>QR + đếm ngược 15'"]
+    BK --> MB["/my-bookings<br/>Sân đã đặt · Kèo tham gia"]
+    MB -.->|"Mở kèo"| MATCHES
+    MATCHES --> MD["/matches/[id]<br/>Chi tiết + duyệt + chat"]
+
+    LOGIN -->|"role = owner"| OD["/owner/dashboard"]
+    OD --> OC["/owner/clubs<br/>Quản lý cụm & sân con"]
+    OD --> OP["/owner/pricing<br/>Bảng giá theo khung giờ"]
+    OD --> OS["/owner/schedule<br/>Lịch đặt (lưới + bảng)"]
+    LOGIN -->|"role = admin"| AD["/admin<br/>Thống kê · hỗ trợ · thông báo"]
+```
+
+### Cơ sở dữ liệu
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ CLUBS : "sở hữu (owner)"
+    CLUBS ||--o{ COURTS : "có nhiều sân con"
+    COURTS ||--o{ COURT_PRICING_RULES : "bảng giá khung giờ"
+    COURTS ||--o{ BOOKINGS : "được đặt"
+    PROFILES ||--o{ BOOKINGS : "đặt"
+    BOOKINGS ||--o| MATCHES : "mở thành kèo (1-1)"
+    BOOKINGS ||--o{ PAYMENTS : "thanh toán cọc"
+    MATCHES ||--o{ MATCH_PARTICIPANTS : "người tham gia"
+    MATCHES ||--o{ MATCH_MESSAGES : "chat"
+    CLUBS ||--o{ CLUB_REVIEWS : "được đánh giá"
+    PROFILES ||--o{ NOTIFICATIONS : "nhận"
+
+    PROFILES {
+        uuid id PK
+        text role "player / owner / admin"
+        text skill_level
+    }
+    COURTS {
+        uuid id PK
+        text sport_type
+        numeric base_price_per_hour
+        int deposit_percentage "% cọc"
+    }
+    BOOKINGS {
+        uuid id PK
+        timestamptz start_time
+        timestamptz end_time
+        text status "pending / confirmed / completed / cancelled"
+        timestamptz expires_at "+15 phút"
+    }
+    MATCHES {
+        uuid id PK
+        int required_players
+        int current_players
+        text cost_sharing_type "split / host_covers"
+    }
+    PAYMENTS {
+        uuid id PK
+        bigint order_code "mã đơn PayOS"
+        text status "pending / paid / ..."
+    }
+```
+
+Sơ đồ chỉ vẽ các bảng lõi. Ngoài ra còn các bảng cho thông báo, chat, đánh giá, khóa PayOS của từng chủ sân, thuê bao, hỗ trợ (ticket) và thông báo hệ thống. Tất cả đều bật Row Level Security, và `profiles` giới hạn quyền đọc theo cột: khách chỉ thấy thông tin hiển thị công khai, số điện thoại chỉ chủ sân xem được qua hàm riêng.
 
 ## Hướng phát triển
 

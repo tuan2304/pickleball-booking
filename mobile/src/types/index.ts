@@ -5,7 +5,8 @@ export type SkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'all'
 export interface Profile {
   id: string
   full_name: string
-  phone_number: string | null
+  // Không đọc trực tiếp được từ bảng profiles (quyền cột); chỉ có khi lấy qua hàm phía server
+  phone_number?: string | null
   avatar_url: string | null
   role: UserRole
   skill_level: string | null

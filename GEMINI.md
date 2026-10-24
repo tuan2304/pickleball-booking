@@ -178,7 +178,7 @@
 
 - **2026-10-21 (Rà soát & nâng cấp giao diện):**
     - Rà soát toàn bộ dự án, ghi kết quả vào file IMPROVEMENTS.md (đã gỡ ngày 23/10/2026, việc còn lại nằm ở README): phát hiện các lỗ hổng bảo mật/thanh toán (P0), lỗi nghiệp vụ (P1) và danh sách việc nên làm tiếp (P2/P3). **Đề xuất Giai đoạn 10: Hardening (RLS, webhook, pg_cron, múi giờ) trước khi chạy thật.**
-    - Viết tài liệu luồng hoạt động có sơ đồ Mermaid: [FLOW.md](FLOW.md).
+    - Viết tài liệu luồng hoạt động có sơ đồ Mermaid: [mục "Luồng hoạt động" trong README.md](README.md#luồng-hoạt-động).
     - Nâng cấp giao diện: sửa lỗi font không áp dụng (`--font-sans` tự tham chiếu chính nó), đổi sang **Be Vietnam Pro** (thân bài, có subset tiếng Việt) + **Barlow Condensed** (tiêu đề); màu `--primary` chuyển sang emerald; thêm hệ animation (fade-up, float, shimmer, card-lift, btn-shine, scroll-reveal, page transition, skeleton loading) có hỗ trợ `prefers-reduced-motion`; làm lại hero + thêm mục 'Bốn bước' ở trang chủ.
     - Build production thành công (15 route).
 - **2026-10-21 (Giai đoạn 10 - Hardening):**
