@@ -28,6 +28,7 @@ export function ClubFilters() {
 
   function updateParams(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())
+    params.delete('page') // đổi bộ lọc thì quay về trang đầu
     if (value && value !== 'all' && value !== 'Tất cả khu vực') {
       params.set(key, value)
     } else {

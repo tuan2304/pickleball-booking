@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
@@ -13,11 +14,35 @@ import { DirectionsLinks } from '@/components/maps/directions-links'
 import { fullAddress, hasCoordinates } from '@/lib/maps'
 import { bookableCourtIds, courtLimit, isBillingEnforced } from '@/lib/billing'
 import { MapPin, Clock, ArrowLeft, Sparkles } from 'lucide-react'
+import { resolveAppUrl } from '@/lib/app-url'
+import { clubDescription, clubJsonLd, serializeJsonLd, shareImage } from '@/lib/seo'
 
 interface ClubDetailPageProps {
   params: Promise<{
     id: string
   }>
+}
+
+export async function generateMetadata({ params }: ClubDetailPageProps): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await getSupabase()
+  const { data: club } = await supabase
+    .from('clubs')
+    .select('name, description, address, district, city, images')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!club) return { title: 'Không tìm thấy cụm sân', robots: { index: false } }
+
+  const description = clubDescription(club)
+  const image = shareImage(club.images)
+  return {
+    title: club.name,
+    description,
+    alternates: { canonical: `/clubs/${id}` },
+    openGraph: { type: 'website', title: club.name, description, url: `/clubs/${id}`, ...(image ? { images: [image] } : {}) },
+    twitter: { card: image ? 'summary_large_image' : 'summary', title: club.name, description, ...(image ? { images: [image] } : {}) },
+  }
 }
 
 export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
@@ -109,8 +134,11 @@ export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
       ? club.images[0]
       : 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=1200'
 
+  const jsonLd = clubJsonLd(club, `${resolveAppUrl()}/clubs/${club.id}`, initialReviews.map((r) => Number(r.rating)))
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <MainHeader />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">

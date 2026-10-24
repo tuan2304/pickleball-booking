@@ -1,8 +1,11 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { OwnerSidebar } from '@/components/owner/owner-sidebar'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { NotificationBell } from '@/components/notifications/notification-bell'
+
+export const metadata: Metadata = { title: 'Cổng chủ sân', robots: { index: false, follow: false } }
 
 export default async function OwnerLayout({
   children,

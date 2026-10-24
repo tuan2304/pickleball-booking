@@ -8,7 +8,7 @@ import { TicketStatusBadge } from '@/components/support/ticket-status-badge'
 import { categoryLabel } from '@/lib/support'
 import { formatDate, formatTime } from '@/lib/format'
 
-export const metadata = { title: 'Hỗ trợ' }
+export const metadata = { title: 'Hỗ trợ', robots: { index: false, follow: false } }
 
 export default async function SupportPage() {
   const user = await getCurrentUser()

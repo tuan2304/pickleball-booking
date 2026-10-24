@@ -1,13 +1,30 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { MainHeader } from '@/components/layout/main-header'
 import { MatchDetailView, type MatchDetailProps } from '@/components/matches/match-detail-view'
 import { getMatchMessages } from '@/app/actions/chat'
+import { truncateDescription } from '@/lib/seo'
 
 interface MatchDetailPageProps {
   params: Promise<{
     id: string
   }>
+}
+
+export async function generateMetadata({ params }: MatchDetailPageProps): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await getSupabase()
+  const { data: match } = await supabase.from('matches').select('title, description').eq('id', id).maybeSingle()
+  if (!match) return { title: 'Không tìm thấy kèo', robots: { index: false } }
+
+  const description = truncateDescription(match.description || `Tham gia kèo "${match.title}" trên SportArena: xem giờ chơi, trình độ và xin vào kèo.`)
+  return {
+    title: match.title,
+    description,
+    alternates: { canonical: `/matches/${id}` },
+    openGraph: { type: 'website', title: match.title, description, url: `/matches/${id}` },
+  }
 }
 
 export default async function MatchDetailPage({ params }: MatchDetailPageProps) {

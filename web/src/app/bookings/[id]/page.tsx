@@ -10,6 +10,8 @@ interface BookingPageProps {
   }>
 }
 
+export const metadata = { title: 'Chi tiết đơn đặt sân', robots: { index: false, follow: false } }
+
 export default async function BookingPage({ params }: BookingPageProps) {
   const { id } = await params
   const supabase = await getSupabase()

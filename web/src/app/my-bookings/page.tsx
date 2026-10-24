@@ -3,6 +3,8 @@ import { getSupabase, getCurrentUser } from '@/lib/supabase/session'
 import { MainHeader } from '@/components/layout/main-header'
 import { MyBookingsView } from '@/components/booking/my-bookings-view'
 
+export const metadata = { title: 'Lịch đặt của tôi', robots: { index: false, follow: false } }
+
 export default async function MyBookingsPage() {
   const supabase = await getSupabase()
   const user = await getCurrentUser()

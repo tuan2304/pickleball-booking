@@ -179,7 +179,7 @@ export default async function Home() {
           </div>
 
           <h1
-            className="text-5xl sm:text-7xl lg:text-8xl font-extrabold leading-[0.95] text-foreground animate-fade-up stagger"
+            className="text-5xl sm:text-7xl lg:text-8xl font-extrabold leading-[1.1] text-foreground animate-fade-up stagger"
             style={{ '--i': 1 } as CSSProperties}
           >
             Đặt sân thật nhanh,

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { MainHeader } from '@/components/layout/main-header'
@@ -6,6 +7,12 @@ import { MatchCard, type MatchCardProps } from '@/components/matches/match-card'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Flame, PlusCircle, Trophy, Users } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Kèo giao lưu thể thao',
+  description: 'Tìm kèo giao lưu pickleball, cầu lông, bóng đá, tennis, bóng rổ còn thiếu người hoặc mở kèo để rủ thêm bạn chơi cùng.',
+  alternates: { canonical: '/matches' },
+}
 
 interface MatchesPageProps {
   searchParams: Promise<{

@@ -1,8 +1,11 @@
 import type { CSSProperties } from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { MainHeader } from '@/components/layout/main-header'
 import { ClubFilters } from '@/components/clubs/club-filters'
+import { ClubPagination } from '@/components/clubs/club-pagination'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RemoteImage } from '@/components/ui/remote-image'
@@ -12,55 +15,103 @@ import { Button } from '@/components/ui/button'
 import { MapPin, Clock, ArrowRight, Trophy, Sparkles } from 'lucide-react'
 
 import { formatNumber } from '@/lib/format'
+import {
+  ALL_DISTRICTS,
+  ALL_SPORTS,
+  clubsHref,
+  pageRange,
+  parsePage,
+  sanitizeSearch,
+  totalPages as countPages,
+} from '@/lib/club-search'
+
+const DESCRIPTION =
+  'Tìm cụm sân bóng đá, cầu lông, pickleball, tennis, bóng rổ gần bạn, xem lịch trống và đặt cọc nhanh qua VietQR.'
+
+export async function generateMetadata({ searchParams }: ClubsPageProps): Promise<Metadata> {
+  const params = await searchParams
+  const page = parsePage(params.page)
+  const q = sanitizeSearch(params.q)
+  return {
+    title: page > 1 ? `Khám phá sân thể thao - Trang ${page}` : 'Khám phá sân thể thao',
+    description: DESCRIPTION,
+    alternates: { canonical: clubsHref({ sport: params.sport, district: params.district, page }) },
+    // Kết quả tìm theo từ khóa là vô hạn biến thể, không nên để công cụ tìm kiếm lập chỉ mục
+    robots: q ? { index: false, follow: true } : undefined,
+  }
+}
+
 interface ClubsPageProps {
   searchParams: Promise<{
     sport?: string
     district?: string
     q?: string
+    page?: string
   }>
+}
+
+// Ghép thêm một bản nhúng courts!inner chỉ khi lọc theo môn: lọc cụm sân có ít nhất một sân thuộc môn đó
+// mà vẫn giữ nguyên danh sách sân con (courts) để hiện giá và các môn của cụm sân.
+const CLUB_SELECT = `*, courts:courts(*)`
+const CLUB_SELECT_BY_SPORT = `*, courts:courts(*), sport_match:courts!inner(sport_type)`
+
+type ClubRow = {
+  id: string
+  name: string
+  address: string
+  district: string | null
+  latitude: number | null
+  longitude: number | null
+  open_time: string
+  close_time: string
+  images: string[] | null
+  amenities: string[] | null
+  courts: Array<{ sport_type: string; base_price_per_hour: number }> | null
 }
 
 export default async function ClubsPage({ searchParams }: ClubsPageProps) {
   const params = await searchParams
-  const sportFilter = params.sport || 'all'
-  const districtFilter = params.district || 'all'
-  const searchQuery = params.q?.toLowerCase() || ''
+  const sportFilter = params.sport || ALL_SPORTS
+  const districtFilter = params.district || ALL_DISTRICTS
+  const searchQuery = sanitizeSearch(params.q)
+  const page = parsePage(params.page)
+  const filters = { sport: sportFilter, district: districtFilter, q: searchQuery }
 
   const supabase = await createClient()
+  const bySport = sportFilter !== ALL_SPORTS
 
-  // Lấy các cụm sân đang active
-  const { data: clubs } = await supabase
+  // Lọc và cắt trang ở database: chỉ tải 12 cụm sân của trang hiện tại thay vì toàn bộ rồi lọc trong bộ nhớ
+  let query = supabase
     .from('clubs')
-    .select(`
-      *,
-      courts:courts(*)
-    `)
+    .select(bySport ? CLUB_SELECT_BY_SPORT : CLUB_SELECT, { count: 'exact' })
     .eq('is_active', true)
-    .order('created_at', { ascending: false })
 
-  let filteredClubs = clubs || []
-
-  // 1. Lọc theo search query
   if (searchQuery) {
-    filteredClubs = filteredClubs.filter(
-      (club) =>
-        club.name.toLowerCase().includes(searchQuery) ||
-        club.address.toLowerCase().includes(searchQuery) ||
-        (club.district && club.district.toLowerCase().includes(searchQuery))
-    )
+    const term = `%${searchQuery}%`
+    query = query.or(`name.ilike.${term},address.ilike.${term},district.ilike.${term}`)
+  }
+  if (districtFilter !== ALL_DISTRICTS && districtFilter !== 'all') {
+    query = query.ilike('district', `%${sanitizeSearch(districtFilter)}%`)
+  }
+  if (bySport) {
+    query = query.eq('sport_match.sport_type', sportFilter)
   }
 
-  // 2. Lọc theo quận/huyện
-  if (districtFilter && districtFilter !== 'all' && districtFilter !== 'Tất cả khu vực') {
-    filteredClubs = filteredClubs.filter((club) => club.district?.includes(districtFilter))
+  const [from, to] = pageRange(page)
+  const { data, count, error } = await query
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: true }) // thứ tự ổn định để hai trang liên tiếp không lặp hay sót cụm sân
+    .range(from, to)
+
+  const totalClubs = count ?? 0
+  const pages = countPages(totalClubs)
+
+  // Trang vượt quá số trang hiện có (do bộ lọc đổi hoặc link cũ): về trang đầu của cùng bộ lọc
+  if ((error || (data ?? []).length === 0) && page > 1) {
+    redirect(clubsHref({ ...filters, page: 1 }))
   }
 
-  // 3. Lọc theo môn thể thao
-  if (sportFilter && sportFilter !== 'all') {
-    filteredClubs = filteredClubs.filter((club) =>
-      club.courts?.some((court: { sport_type: string }) => court.sport_type === sportFilter)
-    )
-  }
+  const filteredClubs = (data ?? []) as unknown as ClubRow[]
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -89,7 +140,10 @@ export default async function ClubsPage({ searchParams }: ClubsPageProps) {
         {/* Clubs Grid */}
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-            <span>Tìm thấy {filteredClubs.length} cụm sân</span>
+            <span>
+              Tìm thấy {totalClubs} cụm sân
+              {pages > 1 && ` · trang ${page}/${pages}`}
+            </span>
           </div>
 
           {filteredClubs.length === 0 ? (
@@ -201,6 +255,8 @@ export default async function ClubsPage({ searchParams }: ClubsPageProps) {
               })}
             </div>
           )}
+
+          <ClubPagination page={page} totalPages={pages} filters={filters} />
         </div>
       </main>
     </div>

@@ -1,9 +1,12 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getCurrentUser, getCurrentProfile } from '@/lib/supabase/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { NotificationBell } from '@/components/notifications/notification-bell'
+
+export const metadata: Metadata = { title: 'Quản trị', robots: { index: false, follow: false } }
 
 /** Khu vực chỉ dành cho quản trị nền tảng: mọi trang con đều đi qua kiểm tra này. */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

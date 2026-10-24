@@ -64,7 +64,7 @@ export function MatchChatBox({
           if (newMsg.user_id) {
             const { data: p } = await supabase
               .from('profiles')
-              .select('id, full_name, avatar_url, role')
+              .select('id, full_name, avatar_url')
               .eq('id', newMsg.user_id)
               .single()
             profile = p || undefined

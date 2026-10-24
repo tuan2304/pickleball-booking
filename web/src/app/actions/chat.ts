@@ -17,8 +17,7 @@ export async function getMatchMessages(matchId: string): Promise<MatchMessage[]>
       profile:profiles (
         id,
         full_name,
-        avatar_url,
-        role
+        avatar_url
       )
     `)
     .eq('match_id', matchId)
@@ -63,8 +62,7 @@ export async function sendMatchMessage(matchId: string, content: string) {
       profile:profiles (
         id,
         full_name,
-        avatar_url,
-        role
+        avatar_url
       )
     `)
     .single()

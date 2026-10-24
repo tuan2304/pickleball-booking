@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { resolveAppUrl } from "@/lib/app-url";
 
 // Font thân bài: thiết kế riêng cho tiếng Việt nên dấu không bị lệch/rơi font
 const beVietnam = Be_Vietnam_Pro({
@@ -27,12 +28,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Gốc để đổi các đường dẫn tương đối (canonical, ảnh chia sẻ) thành địa chỉ tuyệt đối
+  metadataBase: new URL(resolveAppUrl()),
   title: {
     default: "SportArena - Đặt sân & Ghép kèo thể thao",
     template: "%s | SportArena",
   },
   description:
     "Đặt sân chống trùng lịch, đặt cọc qua VietQR và ghép kèo giao lưu thể thao theo thời gian thực.",
+  openGraph: {
+    type: "website",
+    siteName: "SportArena",
+    locale: "vi_VN",
+    images: [{ url: "/icon-512.png", width: 512, height: 512, alt: "SportArena" }],
+  },
+  twitter: { card: "summary" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
