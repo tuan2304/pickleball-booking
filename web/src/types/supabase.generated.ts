@@ -416,11 +416,6 @@ isOneToOne: false
 "can_review_club":
 { Args: { "p_club": string,"p_user": string }; Returns: boolean
                            },
-"club_balances":
-{ Args: { "p_club_ids"?: (string)[] }; Returns: {
-              "club_id": string,"club_name": string,"collected": number,"owed": number,"paid_out": number
-            }[]
-                           },
 "dearmor":
 { Args: { "": string }; Returns: string
                            },

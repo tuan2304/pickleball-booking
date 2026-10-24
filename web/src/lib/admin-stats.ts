@@ -29,7 +29,6 @@ export interface PlatformStats {
   deposits: { collected: number; platform_channel: number; club_channel: number; needs_refund: number }
   subscriptions: { revenue: number; count: number }
   matches: { created: number; open: number }
-  owed_total: number
   open_tickets: number
   daily: Array<{ day: string; bookings: number; deposits: number; new_users: number }>
   top_clubs: Array<{ id: string; name: string; bookings: number; gmv: number }>
