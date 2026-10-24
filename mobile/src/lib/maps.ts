@@ -14,7 +14,7 @@ function validCoords(p: Place): boolean {
 }
 
 /** Có toạ độ thì chỉ đường chính xác, chưa ghim thì tìm theo "tên, địa chỉ". */
-export function directionsUrl(p: Place): string | null {
+function directionsUrl(p: Place): string | null {
   const query = validCoords(p)
     ? `${p.latitude},${p.longitude}`
     : [p.name, p.address].map((s) => s?.trim()).filter(Boolean).join(', ')

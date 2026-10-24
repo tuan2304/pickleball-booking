@@ -17,7 +17,7 @@ export function getPlatformCredentials(): PayosCredentials | null {
   return clientId && apiKey && checksumKey ? { clientId, apiKey, checksumKey } : null
 }
 
-export function isPayOSConfigured(): boolean {
+function isPayOSConfigured(): boolean {
   return getPlatformCredentials() !== null
 }
 

@@ -3,7 +3,7 @@
 export const SPORT_IDS = ['football', 'badminton', 'pickleball', 'tennis', 'basketball'] as const
 export type SportId = (typeof SPORT_IDS)[number]
 
-export const SPORT_LABELS: Record<SportId, string> = {
+const SPORT_LABELS: Record<SportId, string> = {
   football: 'Bóng đá',
   badminton: 'Cầu lông',
   pickleball: 'Pickleball',

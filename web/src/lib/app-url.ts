@@ -9,7 +9,7 @@
  */
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', '0.0.0.0']
 
-export function isLocalHost(hostname: string): boolean {
+function isLocalHost(hostname: string): boolean {
   return LOCAL_HOSTS.includes(hostname)
 }
 

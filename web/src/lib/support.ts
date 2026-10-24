@@ -38,7 +38,7 @@ export function categoryLabel(id: string): string {
   return TICKET_CATEGORIES.find((c) => c.id === id)?.label ?? 'Khác'
 }
 
-export function isTicketCategory(value: unknown): value is TicketCategory {
+function isTicketCategory(value: unknown): value is TicketCategory {
   return TICKET_CATEGORIES.some((c) => c.id === value)
 }
 
@@ -49,7 +49,7 @@ export function isTicketStatus(value: unknown): value is TicketStatus {
 /** Mỗi người chỉ được có tối đa chừng này phiếu chưa giải quyết cùng lúc (chống spam). */
 export const MAX_ACTIVE_TICKETS_PER_USER = 5
 
-export const SUBJECT_MIN = 3
+const SUBJECT_MIN = 3
 export const SUBJECT_MAX = 120
 export const BODY_MAX = 2000
 
